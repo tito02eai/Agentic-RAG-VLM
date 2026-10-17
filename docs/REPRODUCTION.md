@@ -2,7 +2,7 @@
 
 ## 复现范围
 
-本目录依据 `paper/Agentic-RAG-VLM/main_final.tex` 重建了论文描述的核心软件结构：
+本目录依据 `paper/main_final.tex` 重建了论文描述的核心软件结构：
 
 - HAA-RAG：类别、affordance、视觉三级评分，最终权重为 0.2/0.4/0.4；
 - 场景图：对象节点、10 cm 邻接边和易碎邻居约束；
@@ -49,8 +49,12 @@
 
 ## 运行
 
+以下命令均从本仓库根目录执行。`--endpoint`/`--model` 中的
+`/home/admin1/...` 是原始实验服务器的示例部署路径，复现时替换为自己的
+本地 Qwen3.5-4B 服务地址与模型路径；`assets/` 学校资产包不在本仓库分发，
+运行仿真命令前需先按 README 的 Asset note 本地放置并执行 `prepare_assets.py`。
+
 ```bash
-cd Agentic-RAG-VLM
 python scripts/prepare_assets.py
 MUJOCO_GL=egl python scripts/run_qwen_vlm_challenge.py \
   --output output/qwen35_challenge_v2_main --seed-split main \
@@ -82,6 +86,9 @@ bash scripts/render_answer_video.sh
 python scripts/validate_complete_task_demo.py output/complete_task_demo_v2_seed101
 pytest -q tests
 ```
+
+`pytest -q tests` 在缺少学校资产包或 MuJoCo 运行时不可用的机器上会带原因
+跳过资产/物理相关测试，纯逻辑回归测试照常执行；这不改变任何冻结协议。
 
 Challenge/Pilot 的每条 run 都分别保存 `public_trace.jsonl`、`private_evaluator.json` 和
 `scene_spec.json`。正式实验不得把 private evaluator 字段输入 Planner。

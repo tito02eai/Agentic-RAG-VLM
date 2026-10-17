@@ -4,14 +4,24 @@ from pathlib import Path
 import json
 import sys
 
-import mujoco
-import numpy as np
+import pytest
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(SCRIPTS_DIR))
+
+from conftest import guanghua_assets_present, mujoco_runtime_available  # noqa: E402
+
+if not mujoco_runtime_available():
+    pytest.skip(
+        "MuJoCo Python runtime is unavailable in this environment",
+        allow_module_level=True,
+    )
+
+import mujoco  # noqa: E402
+import numpy as np  # noqa: E402
 
 from run_guanghua_env import (  # noqa: E402
     apply_declared_perturbation,
@@ -44,6 +54,15 @@ URDF = ASSET_ROOT / "urdf" / "guanghua_robot_with_hands.urdf"
 PROTOCOL = PROJECT_ROOT / "configs" / "guanghua_experiment_protocol.json"
 DEMO_CONFIG = PROJECT_ROOT / "configs" / "complete_task_demo_v2.json"
 
+# The school-provided Guanghua mesh/URDF bundle is not distributed with this
+# repository; tests that load the generated MJCF/URDF skip cleanly without it.
+# The pure color/geometry tests below keep running in asset-less environments.
+requires_guanghua_assets = pytest.mark.skipif(
+    not guanghua_assets_present(),
+    reason="Guanghua asset bundle is not distributed with this repository; "
+    "see the 'Asset note' in README.md and docs/REPRODUCTION.md",
+)
+
 
 def _id(model: mujoco.MjModel, object_type: mujoco.mjtObj, name: str) -> int:
     object_id = mujoco.mj_name2id(model, object_type, name)
@@ -51,6 +70,7 @@ def _id(model: mujoco.MjModel, object_type: mujoco.mjtObj, name: str) -> int:
     return object_id
 
 
+@requires_guanghua_assets
 def test_canonical_mjcf_loads_with_table_and_actuators() -> None:
     model = mujoco.MjModel.from_xml_path(str(MJCF))
     data = mujoco.MjData(model)
@@ -97,6 +117,7 @@ def test_canonical_mjcf_loads_with_table_and_actuators() -> None:
         _id(model, object_type, name)
 
 
+@requires_guanghua_assets
 def test_initial_state_has_no_penetration_and_remains_finite() -> None:
     model = mujoco.MjModel.from_xml_path(str(MJCF))
     data = mujoco.MjData(model)
@@ -112,6 +133,7 @@ def test_initial_state_has_no_penetration_and_remains_finite() -> None:
     assert np.isclose(data.xpos[cube_id, 2], 0.834, atol=0.003)
 
 
+@requires_guanghua_assets
 def test_right_arm_position_actuator_tracks_a_small_command() -> None:
     model = mujoco.MjModel.from_xml_path(str(MJCF))
     data = mujoco.MjData(model)
@@ -125,6 +147,7 @@ def test_right_arm_position_actuator_tracks_a_small_command() -> None:
     assert np.isclose(data.qpos[qpos_address], 0.2, atol=0.025)
 
 
+@requires_guanghua_assets
 def test_power_synergy_closes_fingertips_toward_thumb() -> None:
     model = mujoco.MjModel.from_xml_path(str(MJCF))
     data = mujoco.MjData(model)
@@ -179,6 +202,7 @@ def test_red_surface_envelope_rejects_high_robot_highlight() -> None:
     assert selected[0].tolist() == [False, True, True, False]
 
 
+@requires_guanghua_assets
 def test_portable_urdf_loads_without_absolute_mesh_paths() -> None:
     text = URDF.read_text(encoding="utf-8")
     assert 'filename="/' not in text
@@ -187,6 +211,7 @@ def test_portable_urdf_loads_without_absolute_mesh_paths() -> None:
     assert model.nbody > 50
 
 
+@requires_guanghua_assets
 def test_frozen_protocol_and_scene_perturbation_are_reproducible() -> None:
     protocol = json.loads(PROTOCOL.read_text(encoding="utf-8"))
     assert set(protocol["scene_families"]) == {"G0", "G1", "G2", "G3", "G4"}
@@ -213,6 +238,7 @@ def test_frozen_protocol_and_scene_perturbation_are_reproducible() -> None:
     assert np.allclose(first.xpos[body_id, :2] - before_xy, [0.025, 0.015])
 
 
+@requires_guanghua_assets
 def test_v2_task_ready_pose_has_full_orientation_and_table_clearance() -> None:
     demo = json.loads(DEMO_CONFIG.read_text(encoding="utf-8"))
     model = mujoco.MjModel.from_xml_path(str(MJCF))
@@ -257,6 +283,7 @@ def test_v2_task_ready_pose_has_full_orientation_and_table_clearance() -> None:
     assert minimum_clearance >= -0.002
 
 
+@requires_guanghua_assets
 def test_mesh_clearance_calibration_replaces_closed_fingertip_midpoint() -> None:
     demo = json.loads(DEMO_CONFIG.read_text(encoding="utf-8"))
     model = mujoco.MjModel.from_xml_path(str(MJCF))
@@ -268,6 +295,7 @@ def test_mesh_clearance_calibration_replaces_closed_fingertip_midpoint() -> None
         assert np.allclose(frame.center_local_m, demo["grasp_center_local_m"][synergy], atol=1e-5)
 
 
+@requires_guanghua_assets
 def test_calibrated_holds_do_not_visibly_penetrate_objects_or_table() -> None:
     model = mujoco.MjModel.from_xml_path(str(MJCF))
     data = mujoco.MjData(model)
@@ -308,6 +336,7 @@ def test_calibrated_holds_do_not_visibly_penetrate_objects_or_table() -> None:
         assert table_clearance >= -0.0005
 
 
+@requires_guanghua_assets
 def test_relation_conditioned_wrist_yaw_improves_protected_clearance() -> None:
     model = mujoco.MjModel.from_xml_path(str(MJCF))
     data = mujoco.MjData(model)

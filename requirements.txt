@@ -1,5 +1,11 @@
-mujoco>=3.2
-numpy>=1.26
+# Agentic RAG-VLM runtime dependencies.
+#
+# Python >= 3.10 is required (scripts/prepare_assets.py uses zip(strict=True)).
+# Last verified combination (Python 3.11): mujoco 3.8.1, numpy 1.26.4,
+# Pillow 12.3.0, pytest 8.3.5, scipy 1.17.1.  Upper bounds exclude untested
+# next major versions; they do not imply that those releases are known-broken.
+mujoco>=3.2,<4
+numpy>=1.26,<2
 Pillow>=10.0
-pytest>=8.0
-scipy>=1.11
+pytest>=8.0,<9
+scipy>=1.11,<2

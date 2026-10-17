@@ -113,6 +113,20 @@ execution trace rather than being hidden simulator interventions.
 pip install -r requirements.txt
 ```
 
+Python 3.10+ is required. The verified dependency combination is recorded in
+`requirements.txt`.
+
+## Tests in a clean environment
+
+`pytest -q tests` runs the pure framework, runtime, and evaluation-contract
+regression tests on any machine. Tests that load the Guanghua MJCF/URDF or
+import MuJoCo-dependent modules skip with an explanatory reason when the
+school asset bundle is absent (it is not distributed, see the asset note
+above) or when no MuJoCo runtime can initialize (for example on some headless
+Windows setups). A skip is an environment limitation, not a protocol change;
+on a machine with the assets and a working MuJoCo runtime the full suite runs
+as before.
+
 ## Prepare and verify (requires locally obtained school bundle assets)
 
 `scripts/prepare_assets.py` regenerates the canonical MJCF and URDF from the

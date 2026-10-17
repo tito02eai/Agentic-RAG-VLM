@@ -5,6 +5,7 @@ import json
 import sys
 
 import numpy as np
+import pytest
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +25,20 @@ from scripts.agentic_framework import (  # noqa: E402
     retrieve_strategy,
 )
 from scripts.validate_agentic_artifacts import PRIVATE_ONLY_KEYS, walk_keys  # noqa: E402
-from scripts.run_qwen_vlm_pilot import evaluate as evaluate_qwen_decision  # noqa: E402
+
+try:
+    from scripts.run_qwen_vlm_pilot import evaluate as evaluate_qwen_decision  # noqa: E402
+except Exception:
+    # The pilot module imports MuJoCo (and the Guanghua environment modules)
+    # at top level; on machines without a working MuJoCo runtime only the
+    # single test that uses it is skipped.
+    evaluate_qwen_decision = None
+
+
+requires_mujoco = pytest.mark.skipif(
+    evaluate_qwen_decision is None,
+    reason="scripts/run_qwen_vlm_pilot.py requires an importable MuJoCo runtime",
+)
 
 
 CARDS = PROJECT_ROOT / "knowledge_base" / "affordance_cards.json"
@@ -112,6 +126,7 @@ def test_qwen_json_parser_accepts_plain_and_fenced_outputs() -> None:
     assert extract_json_object(f"```json\n{json.dumps(expected)}\n```") == expected
 
 
+@requires_mujoco
 def test_qwen_graph_metric_requires_an_executable_away_offset() -> None:
     expected = {"approach_offset_xy_m": [-0.045, 0.02]}
     decision = {
