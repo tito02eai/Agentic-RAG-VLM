@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+
+# Experiment outputs (regenerated locally, not distributed)
+output/
+runs/
+artifacts/
+
+# OS / editor
+.DS_Store
+Thumbs.db

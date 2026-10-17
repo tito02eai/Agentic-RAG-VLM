@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "scope": "VLABench cook_dishes manipulation cards; no evaluator labels or object poses",
+  "cards": [
+    {
+      "id": "broccoli_crown_top_grasp",
+      "category": "broccoli",
+      "superclass": "food_ingredient",
+      "affordance_type": "graspable_produce",
+      "material": "deformable",
+      "fragility": 0.4,
+      "region": "crown_body",
+      "visual_aspect": 1.0,
+      "strategy": {
+        "skill_profile": "food_top_grasp_place",
+        "synergy": "power",
+        "force_n": 7.0,
+        "aperture_m": 0.06,
+        "approach": "top",
+        "lift_clearance_m": 0.2
+      }
+    },
+    {
+      "id": "cheese_wedge_body_top_grasp",
+      "category": "cheese",
+      "superclass": "food_ingredient",
+      "affordance_type": "graspable_wedge",
+      "material": "soft_solid",
+      "fragility": 0.5,
+      "region": "wedge_body",
+      "visual_aspect": 1.3,
+      "strategy": {
+        "skill_profile": "food_top_grasp_place",
+        "synergy": "power",
+        "force_n": 6.0,
+        "aperture_m": 0.065,
+        "approach": "top",
+        "lift_clearance_m": 0.2
+      }
+    },
+    {
+      "id": "bell_pepper_body_side_grasp",
+      "category": "bell_pepper",
+      "superclass": "food_ingredient",
+      "affordance_type": "hollow_produce",
+      "material": "deformable",
+      "fragility": 0.6,
+      "region": "pepper_body",
+      "visual_aspect": 1.1,
+      "strategy": {
+        "skill_profile": "food_side_grasp_place",
+        "synergy": "power",
+        "force_n": 5.0,
+        "aperture_m": 0.07,
+        "approach": "lateral",
+        "lift_clearance_m": 0.2
+      }
+    },
+    {
+      "id": "fish_body_support_grasp",
+      "category": "fish",
+      "superclass": "food_ingredient",
+      "affordance_type": "elongated_food",
+      "material": "soft_solid",
+      "fragility": 0.7,
+      "region": "mid_body",
+      "visual_aspect": 3.0,
+      "strategy": {
+        "skill_profile": "food_side_grasp_place",
+        "synergy": "support",
+        "force_n": 5.0,
+        "aperture_m": 0.075,
+        "approach": "lateral",
+        "lift_clearance_m": 0.2
+      }
+    },
+    {
+      "id": "potato_body_top_grasp",
+      "category": "potato",
+      "superclass": "food_ingredient",
+      "affordance_type": "rigid_produce",
+      "material": "firm",
+      "fragility": 0.2,
+      "region": "body",
+      "visual_aspect": 1.7,
+      "strategy": {
+        "skill_profile": "food_top_grasp_place",
+        "synergy": "power",
+        "force_n": 10.0,
+        "aperture_m": 0.06,
+        "approach": "top",
+        "lift_clearance_m": 0.2
+      }
+    }
+  ]
+}

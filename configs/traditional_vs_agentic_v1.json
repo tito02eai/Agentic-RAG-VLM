@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "experiment_id": "guanghua_traditional_rgbd_ik_vs_agentic_v1",
+  "claim_boundary": "Paired mechanism and kinematic-safety benchmark under the calibrated grasp-skill proxy; not a contact-dynamics success-rate claim.",
+  "methods": {
+    "T0_fixed_rgbd_ik": {
+      "label": "Traditional RGB-D + fixed IK",
+      "perception": "same public color RGB-D centroids",
+      "grasp": "fixed power synergy",
+      "wrist_yaw_deg": 180.0,
+      "monitor": "open loop",
+      "semantics": "none"
+    },
+    "T1_reactive_geometry_ik": {
+      "label": "Reactive geometry + IK",
+      "perception": "same public RGB-D plus primitive shape heuristic",
+      "grasp": "power for wide cube; pinch for narrow cylinder",
+      "wrist_yaw_deg": "single globally tuned yaw, frozen for every layout",
+      "monitor": "replan on any detected scene change",
+      "semantics": "no protected-object relation or task memory"
+    },
+    "A2_agentic_rag_vlm": {
+      "label": "Agentic RAG-VLM",
+      "perception": "same public RGB-D grounded by VLM/semantic adapter",
+      "grasp": "retrieved object-conditioned dexterous-hand synergy",
+      "wrist_yaw_deg": "candidate selected by posture, joint margin and protected clearance",
+      "monitor": "replan only when a pending target becomes stale",
+      "semantics": "protected-glass scene graph plus completed-subgoal memory"
+    }
+  },
+  "experiments": {
+    "E1_affordance": {
+      "objects": ["red_cube", "blue_cylinder"],
+      "repeats": 6,
+      "metric": "grasp-strategy compatibility"
+    },
+    "E2_protected_clearance": {
+      "red_center_xyz_m": [-0.18, -0.20, 0.834],
+      "protected_distance_m": 0.092,
+      "protected_bearings_deg": [0, 45, 90, 135, 180, 225, 270, 315],
+      "candidate_wrist_yaws_deg": [60, 90, 120, 150, 180, 210],
+      "minimum_clearance_m": 0.01,
+      "metric": "minimum hand-to-protected-glass clearance during terminal descent"
+    },
+    "E3_change_attribution": {
+      "events": [
+        "target_move", "no_change", "irrelevant_protected_glass_move",
+        "target_move", "no_change", "irrelevant_protected_glass_move",
+        "target_move", "no_change", "irrelevant_protected_glass_move",
+        "target_move", "no_change", "irrelevant_protected_glass_move"
+      ],
+      "metric": "target-change replan precision, recall and unnecessary-replan rate"
+    },
+    "E4_combined": {
+      "metric": "all required mechanism gates pass in the same trial",
+      "gates": ["affordance", "protected_clearance", "change_attribution", "completed_subgoal_memory"]
+    }
+  }
+}

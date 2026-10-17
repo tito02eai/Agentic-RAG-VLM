@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "experiment_id": "guanghua_agentic_recovery_hierarchy_v1",
+  "claim_boundary": "Controlled verifier-fault injection for recovery logic; physical L3 target displacement is rendered separately.",
+  "scenarios": {
+    "F0_no_failure": {"expected": "no_recovery", "failure_attempts": 0},
+    "F1_position_bias": {"expected": "L1_parameter_retry", "failure_attempts": 1},
+    "F2_wrong_grasp_family": {"expected": "L2_method_switch", "failure_attempts": 2},
+    "F3_stale_scene_plan": {"expected": "L3_full_replan", "failure_attempts": 3},
+    "F4_timeout": {"expected": "safe_stop", "failure_attempts": 1}
+  },
+  "baselines": {
+    "T0_no_recovery": "execute once",
+    "T1_fixed_retry": "one retry with unchanged method",
+    "A2_hierarchical": "bounded L1 parameter retry, L2 method switch, L3 full replan"
+  }
+}

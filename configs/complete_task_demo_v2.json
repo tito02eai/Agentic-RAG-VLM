@@ -1,0 +1,62 @@
+{
+  "schema_version": 2,
+  "demo_id": "guanghua_agentic_rag_vlm_complete_task_v2",
+  "purpose": "Defense video with calibrated hand-object geometry and a reachable task layout",
+  "scene": "G2",
+  "seed": 101,
+  "target_zones": {
+    "red": {"center_xy_m": [-0.08, -0.27], "half_extent_xy_m": [0.045, 0.045]},
+    "blue": {"center_xy_m": [-0.14, -0.12], "half_extent_xy_m": [0.045, 0.045]}
+  },
+  "red_initial_delta_xy_m": [0.0, -0.08],
+  "blue_initial_delta_xy_m": [-0.066, -0.085],
+  "fragile_relative_to_red_xy_m": [-0.10, 0.0],
+  "tool_orientation_world": {
+    "local_x": [0.0, 0.0, 1.0],
+    "local_y": [0.0, 1.0, 0.0],
+    "top_down_yaw_deg": 90.0,
+    "selection_reason": "keeps the protected-cube approach in the natural right-arm branch"
+  },
+  "blue_tool_orientation_world": {
+    "local_x": [0.0, 0.0, 1.0],
+    "local_y": [0.0, 1.0, 0.0],
+    "top_down_yaw_deg": 90.0,
+    "selection_reason": "minimizes shoulder-elbow posture deviation for the final pinch"
+  },
+  "blue_transit_orientation_world": {
+    "local_x": [0.0, 0.0, 1.0],
+    "local_y": [0.8660254038, 0.5, 0.0],
+    "top_down_yaw_deg": 30.0,
+    "selection_reason": "reachable high-clearance transfer branch; wrist yaw is changed only at collision-checked staging poses"
+  },
+  "grasp_center_local_m": {
+    "power": [-0.1595343353, -0.0696452542, -0.0740175291],
+    "pinch": [-0.1875472130, -0.0660195873, -0.0346931527]
+  },
+  "grasp_center_calibration": {
+    "power": "opposing visible-mesh contact with at least 1.5 mm tabletop clearance",
+    "pinch": "thumb-index visible-mesh contact with at least 1.5 mm tabletop clearance",
+    "source": "MuJoCo signed-distance optimization over imported STL hand meshes"
+  },
+  "transport_clearance_m": 0.035,
+  "blue_transport_clearance_m": 0.025,
+  "blue_approach_clearance_m": 0.033,
+  "ik": {
+    "position_tolerance_m": 0.012,
+    "axis_tolerance": 0.04,
+    "position_weight": 20.0,
+    "continuity_weight": 0.0,
+    "posture_weight": 0.04,
+    "joint_center_weight": 0.015,
+    "minimum_joint_limit_margin_rad": 0.14,
+    "maximum_single_waypoint_joint_delta_rad": 1.5
+  },
+  "visual_motion_gate": {
+    "maximum_terminal_position_error_m": 0.005,
+    "minimum_table_clearance_m": -0.0005,
+    "minimum_visual_hand_object_clearance_m": -0.0005,
+    "minimum_protected_object_clearance_m": 0.003,
+    "maximum_grasp_alignment_error_m": 0.003
+  },
+  "claim_boundary": "Kinematic grasp-skill proxy with calibrated hand-relative grasp centres; not a contact-dynamics claim"
+}

@@ -1,0 +1,199 @@
+% ============================================================
+% System Architecture Figure for IROS 2026 Paper
+% Compile separately: pdflatex system_figure.tex
+% Then use paper/figures/system_overview.pdf in main.tex
+% ============================================================
+\documentclass[border=5pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{
+  positioning,
+  arrows.meta,
+  shapes.geometric,
+  shapes.multipart,
+  fit,
+  backgrounds,
+  calc,
+  decorations.pathreplacing
+}
+\usepackage{xcolor}
+\usepackage{times}
+
+% Color Palette
+\definecolor{visionblue}{HTML}{4A90D9}
+\definecolor{raggreen}{HTML}{27AE60}
+\definecolor{agentpurple}{HTML}{8E44AD}
+\definecolor{robotgray}{HTML}{7F8C8D}
+\definecolor{vlmred}{HTML}{E74C3C}
+\definecolor{kbyellow}{HTML}{F39C12}
+\definecolor{bglight}{HTML}{F8F9FA}
+\definecolor{scenegold}{HTML}{D4AC0D}
+
+\begin{document}
+\begin{tikzpicture}[
+  >=Stealth,
+  node distance=0.5cm and 0.6cm,
+  % Block styles
+  module/.style={
+    rectangle, rounded corners=3pt,
+    draw=#1, fill=#1!10, line width=0.8pt,
+    minimum width=2.2cm, minimum height=0.7cm,
+    font=\footnotesize\bfseries, text=black,
+    align=center
+  },
+  submodule/.style={
+    rectangle, rounded corners=2pt,
+    draw=#1!60, fill=#1!5, line width=0.5pt,
+    minimum width=1.8cm, minimum height=0.5cm,
+    font=\scriptsize, text=black,
+    align=center
+  },
+  data/.style={
+    rectangle, rounded corners=1pt,
+    draw=gray!50, fill=gray!5, line width=0.4pt,
+    minimum width=1.4cm, minimum height=0.4cm,
+    font=\scriptsize\itshape, text=gray!80,
+    align=center
+  },
+  groupbox/.style={
+    rectangle, rounded corners=5pt,
+    draw=#1!40, fill=#1!3, line width=1pt,
+    dashed, inner sep=6pt
+  },
+  arrow/.style={
+    ->, line width=0.7pt, color=#1
+  },
+  dasharrow/.style={
+    ->, line width=0.6pt, dashed, color=#1
+  },
+  label/.style={
+    font=\scriptsize\bfseries, color=#1
+  }
+]
+
+% ============================================================
+% Layer 1: Input (left)
+% ============================================================
+\node[module=robotgray] (camera) {RGB-D Camera};
+\node[data=gray, below=0.3cm of camera] (taskdesc) {Task Description};
+
+% ============================================================
+% Layer 2: Vision Processing
+% ============================================================
+\node[module=visionblue, right=1.2cm of camera] (clip) {CLIP Encoder};
+\node[submodule=visionblue, below=0.3cm of clip] (bge) {BGE-M3 Embed.};
+
+% ============================================================
+% Layer 3: RAG System (center top)
+% ============================================================
+\node[module=raggreen, right=1.2cm of clip, yshift=0.8cm] (haarag) {HAA-RAG};
+\node[submodule=raggreen, below=0.25cm of haarag] (cat) {Category Filter};
+\node[submodule=raggreen, below=0.18cm of cat] (aff) {Affordance Match};
+\node[submodule=raggreen, below=0.18cm of aff] (vis) {Visual Re-rank};
+
+% Knowledge Base (below RAG)
+\node[module=kbyellow, below=0.6cm of vis] (kb) {Knowledge Base};
+\node[submodule=kbyellow, below=0.25cm of kb] (chromadb) {ChromaDB};
+\node[submodule=kbyellow, right=0.1cm of chromadb] (exppool) {Exp. Pool};
+
+% Scene Graph (below KB)
+\node[module=scenegold, below=0.5cm of chromadb, xshift=0.5cm] (sg) {Scene Graph};
+
+% ============================================================
+% Layer 4: Agentic Pipeline (right)
+% ============================================================
+\node[module=agentpurple, right=1.5cm of haarag, yshift=-0.4cm] (react) {ReAct Engine};
+\node[submodule=agentpurple, below=0.25cm of react] (tools) {Tool Dispatch};
+\node[submodule=agentpurple, below=0.18cm of tools] (reflect) {Self-Reflection};
+\node[submodule=agentpurple, below=0.18cm of reflect] (retry) {Adaptive Retry};
+
+% ============================================================
+% Layer 5: VLM (center right)
+% ============================================================
+\node[module=vlmred, right=1.2cm of react] (vlm) {Qwen3-VL-8B};
+\node[submodule=vlmred, below=0.25cm of vlm] (int4) {INT4 + FP8 KV};
+\node[submodule=vlmred, below=0.18cm of int4] (vllm) {vLLM Serve};
+
+% ============================================================
+% Layer 6: Robot Execution (bottom right)
+% ============================================================
+\node[module=robotgray, below=1.5cm of retry] (exec) {Grasp Execution};
+\node[submodule=robotgray, below=0.25cm of exec] (pybullet) {PyBullet / Real};
+\node[submodule=robotgray, right=0.1cm of pybullet] (franka) {Franka Panda};
+
+% ============================================================
+% Group Boxes
+% ============================================================
+\begin{scope}[on background layer]
+  % RAG group
+  \node[groupbox=raggreen, fit=(haarag)(cat)(aff)(vis),
+        label={[label=raggreen]above:{\small Multi-Level RAG}}] (ragbox) {};
+  
+  % KB group
+  \node[groupbox=kbyellow, fit=(kb)(chromadb)(exppool)(sg),
+        label={[label=kbyellow]above:{\small Knowledge Store}}] (kbbox) {};
+  
+  % Agent group
+  \node[groupbox=agentpurple, fit=(react)(tools)(reflect)(retry),
+        label={[label=agentpurple]above:{\small Agentic Pipeline}}] (agentbox) {};
+  
+  % VLM group
+  \node[groupbox=vlmred, fit=(vlm)(int4)(vllm),
+        label={[label=vlmred]above:{\small VLM Backend}}] (vlmbox) {};
+\end{scope}
+
+% ============================================================
+% Arrows
+% ============================================================
+% Input -> Encoding
+\draw[arrow=visionblue] (camera) -- (clip);
+\draw[arrow=visionblue] (taskdesc) -| (bge);
+
+% Encoding -> RAG
+\draw[arrow=raggreen] (clip) -- (haarag);
+\draw[arrow=raggreen] (bge) -| ($(haarag.south west)+(0.3, 0)$);
+
+% RAG -> KB
+\draw[arrow=kbyellow] (vis.south) -- (kb.north);
+
+% KB -> Scene Graph
+\draw[arrow=scenegold] (kb.south) -- ++(0, -0.3) -| (sg.north);
+
+% RAG -> Agent
+\draw[arrow=agentpurple] (haarag.east) -- (react.west)
+  node[midway, above, font=\scriptsize, text=gray] {context};
+
+% Scene Graph -> Agent
+\draw[arrow=scenegold] (sg.east) -| ($(retry.south west)+(-0.1, -0.3)$) -- (retry.south west);
+
+% Agent <-> VLM
+\draw[arrow=vlmred] (react.east) -- (vlm.west)
+  node[midway, above, font=\scriptsize, text=gray] {prompt};
+\draw[arrow=agentpurple] ($(vlm.west)+(0, -0.15)$) -- ($(react.east)+(0, -0.15)$)
+  node[midway, below, font=\scriptsize, text=gray] {plan};
+
+% Agent -> Robot
+\draw[arrow=robotgray] (retry.south) -- (exec.north)
+  node[midway, right, font=\scriptsize, text=gray] {action};
+
+% Robot feedback -> Reflection (feedback loop)
+\draw[dasharrow=robotgray] (exec.west) -| ($(reflect.south)+(0.5, -0.5)$) -- ($(reflect.south)+(0, -0.5)$) -- (reflect.south)
+  node[near start, below, font=\scriptsize, text=gray!70] {feedback};
+
+% Experience -> KB
+\draw[dasharrow=kbyellow] ($(reflect.west)+(-0.1, 0)$) -| (exppool.north)
+  node[near start, above, font=\scriptsize, text=gray!70] {learn};
+
+% Numbered steps
+\node[circle, draw=agentpurple, fill=agentpurple!20, inner sep=1pt, font=\tiny\bfseries] 
+  at ($(camera.east)!0.5!(clip.west)+(0, 0.3)$) {1};
+\node[circle, draw=raggreen, fill=raggreen!20, inner sep=1pt, font=\tiny\bfseries] 
+  at ($(clip.east)!0.5!(haarag.west)+(0, 0.3)$) {2};
+\node[circle, draw=agentpurple, fill=agentpurple!20, inner sep=1pt, font=\tiny\bfseries] 
+  at ($(haarag.east)!0.5!(react.west)+(0, 0.3)$) {3};
+\node[circle, draw=vlmred, fill=vlmred!20, inner sep=1pt, font=\tiny\bfseries] 
+  at ($(react.east)!0.5!(vlm.west)+(0, 0.3)$) {4};
+\node[circle, draw=robotgray, fill=robotgray!20, inner sep=1pt, font=\tiny\bfseries] 
+  at ($(retry.south)!0.5!(exec.north)+(0.3, 0)$) {5};
+
+\end{tikzpicture}
+\end{document}

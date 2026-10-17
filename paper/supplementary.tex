@@ -1,0 +1,202 @@
+% ============================================================
+% Supplementary Material for IROS 2026 Submission
+% ============================================================
+\documentclass[letterpaper, 10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{subcaption}
+\usepackage{pifont}
+\usepackage{times}
+
+\geometry{margin=1in}
+
+\newcommand{\sysname}{Agentic RAG-VLM}
+\newcommand{\haarag}{HAA-RAG}
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+
+\title{Supplementary Material:\\Agentic RAG-VLM: Affordance-Aware Retrieval-Augmented Generation\\with Self-Reflective Planning for Robotic Grasping}
+
+\author{Anonymous IROS Submission}
+
+\begin{document}
+\maketitle
+
+\section{Extended Ablation Results}
+
+\subsection{Agentic Pipeline Component Analysis}
+
+Table~\ref{tab:agentic_ablation} shows the contribution of each agentic component, added incrementally to the VLM-Only baseline.
+
+\begin{table}[h]
+\centering
+\caption{Agentic pipeline ablation. Each row adds one component cumulatively.}
+\label{tab:agentic_ablation}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Configuration} & \textbf{Success (\%)} & \textbf{Avg Retries} & $\Delta$ \\
+\midrule
+A. VLM-Only & 25.0 & 0.00 & -- \\
+B. + HAA-RAG & 45.8 & 0.00 & +20.8 \\
+C. + Retry (3-level) & 67.2 & 1.12 & +42.2 \\
+D. + Scene Graph & 68.1 & 1.08 & +43.1 \\
+E. + Episodic Memory & \textbf{69.7} & 1.04 & \textbf{+44.7} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analysis.} RAG retrieval provides the largest single improvement ($+20.8\%$), enabling the system to leverage stored affordance-specific grasp parameters rather than generic VLM heuristics.
+The three-level retry mechanism adds another $+21.4\%$, confirming that closed-loop failure recovery is critical for interactive and long-horizon tasks.
+Scene graph constraints and episodic memory each contribute incremental gains of $+0.9\%$ and $+1.6\%$, respectively.
+The memory contribution is concentrated on long-horizon tasks (51.7\% vs.\ 36.7\% without memory), where parameter transfer between similar objects is most effective.
+
+\subsection{Per-Task Success Breakdown}
+
+\begin{table}[h]
+\centering
+\caption{Per-task success rates (\%) for the full system.}
+\label{tab:per_task}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llcc@{}}
+\toprule
+\textbf{Category} & \textbf{Task} & \textbf{Success} & \textbf{Avg Retries} \\
+\midrule
+\multirow{6}{*}{Single} & Pick cup & 100.0 & 0.0 \\
+ & Pick apple & 100.0 & 0.0 \\
+ & Pick bottle & 96.7 & 0.3 \\
+ & Pick banana & 100.0 & 0.0 \\
+ & Pick bowl (edge grasp) & 56.7 & 1.8 \\
+ & Pick cube & 50.0 & 2.1 \\
+\midrule
+\multirow{4}{*}{Interactive} & Cup near vase & 60.0 & 1.5 \\
+ & Ball behind box & 76.7 & 0.8 \\
+ & Phone near glass & 53.3 & 1.9 \\
+ & Pick with tool & 40.0 & 2.3 \\
+\midrule
+\multirow{2}{*}{Long-horizon} & Clear table (3 objects) & 53.3 & 1.2 \\
+ & Sort by fragility & 50.0 & 1.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Analysis.}
+Easy single-grasp tasks (cup, apple, banana) achieve 100\% success with zero retries, demonstrating reliable RAG retrieval for well-represented affordance types.
+Bowl and cube tasks are more challenging due to edge-grasp and geometric constraints.
+Interactive tasks range from 40--77\% depending on constraint complexity.
+Long-horizon tasks hover around 50\%, limited by error accumulation across sequential grasps.
+
+\section{Failure Type Taxonomy}
+
+Table~\ref{tab:failure_types} lists the 14 failure types organized in four groups, with associated detection signals and recovery strategies.
+
+\begin{table}[h]
+\centering
+\caption{Failure type taxonomy and recovery strategies.}
+\label{tab:failure_types}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Group} & \textbf{Failure Type} & \textbf{Detection} & \textbf{Recovery} \\
+\midrule
+\multirow{3}{*}{Pre-contact}
+ & POSITION\_ERROR & IK residual $> \epsilon$ & Re-localize target \\
+ & UNREACHABLE & IK divergence & Adjust approach dir. \\
+ & APPROACH\_ERROR & Angle mismatch & Rotate approach $\pm$15$^\circ$ \\
+\midrule
+\multirow{3}{*}{Contact}
+ & WIDTH\_MISMATCH & Gripper fails close & $w' = w \pm 10$\,mm \\
+ & COLLISION & Non-target contact & Height $+$30\,mm \\
+ & ORIENTATION\_ERROR & Grasp angle $>$ tol. & Rotate 90$^\circ$ \\
+\midrule
+\multirow{4}{*}{Post-grasp}
+ & SLIP & Force $\downarrow$ during lift & $f' = 1.2f$ \\
+ & DROP & Object falls post-lift & $f' = 1.3f$, verify \\
+ & FORCE\_DAMAGE & $f > f_{\max}^{\text{frag}}$ & $f' = 0.7f$ \\
+ & DEFORMATION & $\Delta$ shape detected & Switch to pinch \\
+\midrule
+\multirow{4}{*}{Task-level}
+ & WRONG\_OBJECT & ID mismatch & Re-identify target \\
+ & CONSTRAINT\_VIOL. & SG constraint fail & Apply constraints \\
+ & TIMEOUT & $t > t_{\max}$ & Simplify plan \\
+ & UNKNOWN & Unclassified & Full re-planning \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Knowledge Base Statistics}
+
+Our knowledge base contains 110 curated grasp experiences spanning 10 object categories and 8 affordance types.
+
+\begin{table}[h]
+\centering
+\caption{Knowledge base composition (110 experiences, 8 affordance types).}
+\begin{tabular}{@{}lccl@{}}
+\toprule
+\textbf{Category} & \textbf{Count} & \textbf{Success \%} & \textbf{Primary Affordance} \\
+\midrule
+Cup/Mug & 15 & 87\% & GRASPABLE\_HANDLE \\
+Bottle & 12 & 83\% & GRASPABLE\_BODY \\
+Bowl & 10 & 70\% & GRASPABLE\_EDGE \\
+Fruit (apple, banana) & 14 & 93\% & WRAPPABLE \\
+Cube/Block & 10 & 80\% & GRASPABLE\_BODY \\
+Glass (vase, wine) & 12 & 67\% & FRAGILE \\
+Tool (screwdriver) & 10 & 75\% & TOOL\_HANDLE \\
+Phone/Electronics & 10 & 70\% & CLAMPABLE \\
+Ball & 8 & 88\% & WRAPPABLE \\
+Other & 9 & 78\% & Various \\
+\midrule
+\textbf{Total} & \textbf{110} & \textbf{79\%} & \textbf{8 types} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Each experience stores: object category, affordance descriptor (type, material, fragility, region), grasp parameters (position offset, width, force, grasp type), and binary success label.
+Failed experiences are retained with contrastive penalties to prevent strategy repetition.
+
+\section{Computational Cost Breakdown}
+
+\begin{table}[h]
+\centering
+\caption{End-to-end latency breakdown per grasp decision (INT4 quantized).}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Stage} & \textbf{Latency} & \textbf{Share} & \textbf{Notes} \\
+\midrule
+Scene Analysis (VLM) & 850 ms & 45\% & INT4 quantized \\
+RAG Retrieval (3-level) & 15 ms & 0.8\% & In-memory indexed \\
+Scene Graph Construction & 50 ms & 2.7\% & Object-pair traversal \\
+Constraint Inference & 10 ms & 0.5\% & 4 constraint types \\
+Grasp Planning (VLM) & 800 ms & 42\% & Parameter generation \\
+Reflection (if retry) & 150 ms & 8\% & Conditional, per retry \\
+\midrule
+\textbf{Total (first attempt)} & \textbf{$\sim$1.7 s} & -- & -- \\
+\textbf{Total (with 1 retry)} & \textbf{$\sim$2.7 s} & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Reproducibility}
+
+\textbf{Code}: Available at \url{[anonymous upon acceptance]}.
+
+\textbf{Hardware}: VLM inference benchmarked on NVIDIA RTX 5090 (32GB). The INT4-quantized model (6.7\,GB) can also run on NVIDIA Jetson AGX Orin.
+Simulation experiments use CPU-based physics-informed simulation (no GPU required).
+
+\textbf{Software}: Python 3.11, NumPy 1.26.4, SciPy 1.11.4.
+VLM: Qwen3-VL-8B with BitsAndBytes INT4 quantization.
+
+\textbf{Seeds}: All experiments use seed=42 with 30 trials per task.
+Statistical testing uses 5 independent complete repetitions with two-tailed $t$-tests ($\alpha = 0.05$, Bonferroni-corrected).
+
+\textbf{Simulation}: Physics-informed tabletop simulation modeling Franka Panda 7-DoF kinematics, parallel-jaw gripper (0--80\,mm), workspace geometry, IK feasibility, geometric collision detection, and seven-factor grasp quality evaluation.
+Grasp outcomes are determined by structured threshold analysis on quality factors, ensuring reproducible and physically meaningful results.
+
+\textbf{Video}: The supplementary video demonstrates single-object grasping, interactive grasping with collision avoidance, and failure recovery through self-reflection across representative tasks.
+
+\end{document}

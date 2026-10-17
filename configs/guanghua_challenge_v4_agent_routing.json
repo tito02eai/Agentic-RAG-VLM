@@ -1,0 +1,72 @@
+{
+  "schema_version": 4,
+  "experiment_id": "guanghua_agentic_rag_vlm_challenge_v4_model_selected_tools",
+  "claim_boundary": "Real multimodal Agentic mechanism evaluation with model-selected, public-observation tool execution and a calibrated kinematic manipulation skill proxy; not a contact-dynamics grasp claim.",
+  "task": "Place the red object in the red zone, then place the blue object in the blue zone while protecting the yellow fragile object.",
+  "design": {
+    "paired_frozen_scenes": true,
+    "answer_revealing_directives_forbidden": true,
+    "negative_change_controls": ["no_change", "irrelevant_fragile_move"],
+    "difficulty_axes": ["affordance_shape", "fragile_distance", "fragile_bearing", "pending_target_displacement", "instruction_paraphrase", "mass", "friction"],
+    "public_observation_only_agent_tools": true,
+    "model_selected_tool_calls": true,
+    "scene_label_driven_routing_forbidden": true,
+    "tool_receipts_required": true
+  },
+  "agent_tool_contracts": {
+    "retrieval_to_dexterous_skill_router_v1": "When explicitly selected by the VLM, rank public object descriptors against HAA-RAG cards and execute the selected hand synergy; preserve the proposal and routing receipt.",
+    "protected_relation_to_motion_constraint_v1": "When explicitly selected by the VLM, convert a public protected-object relation into a metric away offset, height and force limit.",
+    "role_aware_change_and_memory_verifier_v1": "When explicitly selected by the VLM, apply the public displacement threshold and intersect changed objects with pending targets before replanning."
+  },
+  "conditions": {
+    "G1": ["C2_full", "B0_vlm_only"],
+    "G2": ["C2_full", "A_no_graph"],
+    "G3": ["C2_full", "A_no_memory", "A_no_replan"],
+    "G4": ["C2_full", "C1_local", "B0_skill_only"]
+  },
+  "object_rest_z_m": {
+    "red_cube": 0.834,
+    "blue_cylinder": 0.861,
+    "fragile_proxy": 0.876
+  },
+  "object_free_joints": {
+    "red_cube": "cube_free",
+    "blue_cylinder": "blue_cylinder_free",
+    "fragile_proxy": "fragile_proxy_free"
+  },
+  "affordance_variants": {
+    "red_cube": [
+      {"id": "standard_cube", "visual_size_m": [0.033, 0.033, 0.033], "expected_grasp": "power", "expected_card": "cube_rigid_body_power"},
+      {"id": "flat_box", "visual_size_m": [0.045, 0.030, 0.018], "expected_grasp": "side", "expected_card": "cube_flat_edge_side"}
+    ],
+    "blue_cylinder": [
+      {"id": "narrow_cylinder", "visual_size_m": [0.028, 0.060], "collision_half_size_m": [0.026, 0.026, 0.060], "expected_grasp": "pinch", "expected_card": "cylinder_narrow_pinch"},
+      {"id": "wide_cylinder", "visual_size_m": [0.048, 0.040], "collision_half_size_m": [0.046, 0.046, 0.040], "expected_grasp": "power", "expected_card": "cylinder_wide_power"}
+    ]
+  },
+  "fragile_distances_m": [0.06, 0.08, 0.10, 0.14],
+  "fragile_bearings_deg": [0, 90, 180, 270],
+  "change_events": ["target_move", "no_change", "irrelevant_fragile_move"],
+  "target_move_magnitudes_m": [0.02, 0.04, 0.06],
+  "instruction_paraphrases": [
+    "Place both task targets: red in the red zone first, then blue in the blue zone; keep clear of the yellow fragile object.",
+    "Complete both placements in order, red first and blue second; the yellow item is protected and must not be disturbed.",
+    "Finish the two-object order by placing red and then blue, using a safe route around the yellow obstacle."
+  ],
+  "combined_randomization": {
+    "xy_jitter_m": 0.018,
+    "yaw_jitter_deg": 30,
+    "friction_scale_range": [0.8, 1.2],
+    "mass_scale_range": [0.85, 1.15]
+  },
+  "seeds": {
+    "admission": [303],
+    "main": [301, 302, 303, 304, 305, 306, 307, 308, 309, 310]
+  },
+  "evaluation": {
+    "fragile_threshold_m": 0.105,
+    "minimum_avoidance_offset_m": 0.03,
+    "minimum_away_cosine": 0.65,
+    "change_threshold_m": 0.015
+  }
+}

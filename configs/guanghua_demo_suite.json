@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "suite_id": "guanghua_agentic_rag_vlm_defense_suite",
+  "seed": 101,
+  "scenarios": {
+    "nominal": {
+      "title": "Nominal: affordance retrieval and sequential manipulation",
+      "scene_graph_enabled": false,
+      "perturbation_enabled": false,
+      "fragile_relative_to_red_xy_m": [0.17, 0.10],
+      "mechanisms": ["public RGB-D observation", "HAA-RAG skill selection", "verified subgoal memory"]
+    },
+    "fragile": {
+      "title": "Fragile-aware: scene-graph constrained approach",
+      "scene_graph_enabled": true,
+      "perturbation_enabled": false,
+      "fragile_relative_to_red_xy_m": [0.07, -0.06],
+      "mechanisms": ["HAA-RAG skill selection", "scene graph", "fragile-aware approach constraint"]
+    },
+    "recovery": {
+      "title": "Recovery: public change detection and bounded L3 replan",
+      "scene_graph_enabled": false,
+      "perturbation_enabled": true,
+      "fragile_relative_to_red_xy_m": [0.17, 0.10],
+      "mechanisms": ["verified subgoal memory", "public change detection", "L3 replan"]
+    },
+    "showcase": {
+      "title": "Showcase: retrieval, graph constraint, memory and L3 replan",
+      "scene_graph_enabled": true,
+      "perturbation_enabled": true,
+      "fragile_relative_to_red_xy_m": [0.07, -0.06],
+      "mechanisms": ["HAA-RAG", "scene graph", "quality verification", "episodic memory", "L3 replan"]
+    }
+  },
+  "claim_boundary": "The videos validate Agentic orchestration and calibrated kinematic skill execution; they do not claim contact-dynamics grasp robustness."
+}

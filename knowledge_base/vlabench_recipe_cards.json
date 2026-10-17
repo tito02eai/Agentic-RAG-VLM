@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "scope": "Public household recipe knowledge; no VLABench poses, rewards or success labels",
+  "cards": [
+    {"id": "recipe_tomato_egg", "dish": "tomato_and_egg_stir_fry", "ingredients": ["tomato", "egg"]},
+    {"id": "recipe_garlic_steak_mushroom", "dish": "garlic_steak_with_mushroom", "ingredients": ["steak", "garlic", "mushroom"]},
+    {"id": "recipe_broccoli_cheese", "dish": "broccoli_and_cheese_bake", "ingredients": ["broccoli", "cheese"]},
+    {"id": "recipe_carrot_corn", "dish": "carrot_and_corn_salad", "ingredients": ["carrot", "corn"]},
+    {"id": "recipe_pepper_eggplant", "dish": "bell_pepper_and_eggplant_stir_fry", "ingredients": ["bell_pepper", "eggplant", "garlic"]},
+    {"id": "recipe_fish_garlic_onion", "dish": "fish_with_garlic_and_onion", "ingredients": ["fish", "garlic", "onion"]},
+    {"id": "recipe_sweet_potato_cheese", "dish": "sweet_potato_and_cheese_bake", "ingredients": ["sweet_potato", "cheese"]},
+    {"id": "recipe_steak_potato", "dish": "steak_and_potato_skillet", "ingredients": ["steak", "potato", "onion"]},
+    {"id": "recipe_eggplant_tomato", "dish": "eggplant_and_tomato_stew", "ingredients": ["eggplant", "tomato", "garlic"]},
+    {"id": "recipe_mushroom_broccoli", "dish": "mushroom_and_broccoli_stir_fry", "ingredients": ["mushroom", "broccoli", "garlic"]},
+    {"id": "recipe_carrot_sweet_potato", "dish": "carrot_and_sweet_potato_roast", "ingredients": ["carrot", "sweet_potato", "garlic"]},
+    {"id": "recipe_fish_pepper", "dish": "fish_and_bell_pepper_saute", "ingredients": ["fish", "bell_pepper", "onion"]},
+    {"id": "recipe_corn_cheese_omelette", "dish": "corn_and_cheese_omelette", "ingredients": ["corn", "egg", "cheese"]},
+    {"id": "recipe_tomato_onion_salad", "dish": "tomato_and_onion_salad", "ingredients": ["tomato", "onion"]},
+    {"id": "recipe_eggplant_mushroom_gratin", "dish": "eggplant_and_mushroom_gratin", "ingredients": ["eggplant", "mushroom", "cheese"]}
+  ]
+}

@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "experiment_id": "guanghua_agentic_rag_vlm_dynamic_kitting_v1",
+  "claim": "Agentic RAG-VLM improves affordance-conditioned, constraint-aware and recoverable tabletop manipulation on a new robot embodiment without VLA training.",
+  "instruction": "Put the red cube in the red target zone and the blue cylinder in the blue target zone without touching the translucent yellow protected glass.",
+  "robot": {
+    "name": "Guanghua FDR3",
+    "primary_arm": "right",
+    "controller": "damped-least-squares IK plus joint position control",
+    "grasp_synergies": ["power", "pinch", "side"]
+  },
+  "observation_contract": {
+    "public": [
+      "front RGB-D",
+      "agent RGB-D",
+      "right wrist RGB",
+      "joint position and velocity",
+      "hand actuator state",
+      "previous skill outcome derived from public observations"
+    ],
+    "evaluator_only": [
+      "MuJoCo body poses",
+      "contact pairs and forces",
+      "target-zone membership",
+      "injected perturbation metadata",
+      "terminal success label"
+    ]
+  },
+  "objects": {
+    "red_cube": {
+      "body": "cube",
+      "free_joint": "cube_free",
+      "rest_z_m": 0.834,
+      "affordance": "rigid wide body",
+      "expected_grasp": "power"
+    },
+    "blue_cylinder": {
+      "body": "blue_cylinder",
+      "free_joint": "blue_cylinder_free",
+      "rest_z_m": 0.861,
+      "affordance": "narrow cylindrical body",
+      "expected_grasp": "pinch"
+    },
+    "fragile_proxy": {
+      "body": "fragile_proxy",
+      "free_joint": "fragile_proxy_free",
+      "rest_z_m": 0.876,
+      "display_name": "protected_glass",
+      "affordance": "protected fragile obstacle",
+      "expected_grasp": "do_not_grasp",
+      "semantic_role": "tests whether the planner turns a language-level fragile/do-not-touch instruction into a keep-out relation, approach orientation and clearance constraint"
+    }
+  },
+  "target_zones": {
+    "red": {"center_xy_m": [-0.03, -0.23], "half_extent_xy_m": [0.055, 0.055]},
+    "blue": {"center_xy_m": [-0.03, -0.05], "half_extent_xy_m": [0.055, 0.055]},
+    "staging": {"center_xy_m": [-0.18, 0.13], "half_extent_xy_m": [0.07, 0.07]}
+  },
+  "scene_families": {
+    "G0": {
+      "name": "nominal_clear",
+      "isolates": "base execution competence",
+      "layout_xy_m": {
+        "red_cube": [-0.18, -0.23],
+        "blue_cylinder": [-0.18, -0.05],
+        "fragile_proxy": [0.05, 0.10]
+      },
+      "xy_jitter_m": 0.01,
+      "yaw_jitter_deg": 10
+    },
+    "G1": {
+      "name": "affordance_contrast",
+      "isolates": "HAA-RAG grasp selection",
+      "layout_xy_m": {
+        "red_cube": [-0.18, -0.05],
+        "blue_cylinder": [-0.18, -0.23],
+        "fragile_proxy": [0.05, 0.10]
+      },
+      "xy_jitter_m": 0.015,
+      "yaw_jitter_deg": 25
+    },
+    "G2": {
+      "name": "fragile_neighbor",
+      "isolates": "scene graph and offset approach",
+      "layout_xy_m": {
+        "red_cube": [-0.18, -0.20],
+        "blue_cylinder": [-0.18, -0.03],
+        "fragile_proxy": [-0.105, -0.20]
+      },
+      "xy_jitter_m": 0.008,
+      "yaw_jitter_deg": 12
+    },
+    "G3": {
+      "name": "post_plan_displacement",
+      "isolates": "execution memory and L3 replan",
+      "layout_xy_m": {
+        "red_cube": [-0.18, -0.23],
+        "blue_cylinder": [-0.18, -0.05],
+        "fragile_proxy": [0.05, 0.10]
+      },
+      "xy_jitter_m": 0.01,
+      "yaw_jitter_deg": 10,
+      "perturbation": {
+        "trigger": "after_first_verified_placement",
+        "object": "blue_cylinder",
+        "delta_xy_m": [0.025, 0.015]
+      }
+    },
+    "G4": {
+      "name": "combined_randomization",
+      "isolates": "combined robustness",
+      "layout_xy_m": {
+        "red_cube": [-0.18, -0.23],
+        "blue_cylinder": [-0.18, -0.05],
+        "fragile_proxy": [-0.105, -0.14]
+      },
+      "xy_jitter_m": 0.025,
+      "yaw_jitter_deg": 35,
+      "friction_scale_range": [0.8, 1.2],
+      "mass_scale_range": [0.85, 1.15]
+    }
+  },
+  "conditions": {
+    "B0_skill_only": "fixed generic grasp and fixed object order",
+    "B1_rag_only": "HAA-RAG grasp selection without scene graph or recovery",
+    "C1_local": "public-observation monitor plus one fixed retry",
+    "C2_full": "HAA-RAG plus scene graph plus execution memory plus bounded L1/L2/L3 recovery",
+    "A_no_rag": "C2_full with generic grasp parameters",
+    "A_no_graph": "C2_full with direct approach only",
+    "A_no_memory": "C2_full without completed-subgoal or episodic memory",
+    "A_no_replan": "C2_full with L3 disabled"
+  },
+  "paired_comparisons": {
+    "G1": ["C2_full", "A_no_rag"],
+    "G2": ["C2_full", "A_no_graph"],
+    "G3": ["C2_full", "A_no_memory", "A_no_replan"],
+    "G4": ["B0_skill_only", "C1_local", "C2_full"]
+  },
+  "metrics": {
+    "primary": [
+      "complete-order success",
+      "verified subgoals completed",
+      "protected-object contact rate",
+      "conditional natural-recovery success"
+    ],
+    "mechanism": [
+      "affordance-card top-1 accuracy",
+      "grasp-synergy selection accuracy",
+      "constraint satisfaction rate",
+      "stale-plan detection precision and recall",
+      "duplicate-action and wrong-object rate",
+      "safe-stop and retry-budget exhaustion rate"
+    ],
+    "cost": [
+      "VLM calls per successful episode",
+      "retrieval and memory operations",
+      "actions and path length",
+      "planner latency p50 and p95",
+      "episode wall time"
+    ]
+  },
+  "seeds": {
+    "admission": [7],
+    "pilot": [7, 13, 17, 23, 42],
+    "main": [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120],
+    "headline_confirmation": [201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230]
+  },
+  "recovery_budget": {"l1_parameter_retries": 1, "l2_skill_switches": 1, "l3_replans": 1},
+  "required_artifacts": [
+    "frozen_config.json",
+    "scene_spec.json",
+    "public_trace.jsonl",
+    "private_evaluator.json",
+    "front_camera.mp4",
+    "keyframes/",
+    "runtime_receipt.json"
+  ]
+}

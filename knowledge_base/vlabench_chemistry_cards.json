@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "scope": "Public laboratory-vessel handling experiences; no VLABench target labels, poses, rewards or success flags",
+  "cards": [
+    {
+      "id": "glass_tube_body_precision_pour",
+      "category": "chemistry_tube",
+      "superclass": "laboratory_vessel",
+      "affordance_type": "pourable_tube",
+      "material": "glass",
+      "fragility": 0.9,
+      "region": "tube_body",
+      "visual_aspect": 4.0,
+      "strategy": {
+        "skill_profile": "glass_tube_upright_pour_return",
+        "synergy": "precision",
+        "force_n": 3.0,
+        "aperture_m": 0.03,
+        "approach": "lateral_body",
+        "lift_clearance_m": 0.25,
+        "pour_clearance_m": 0.15,
+        "max_pre_flask_tilt_deg": 12.0,
+        "pour_angle_deg": 125.0
+      }
+    },
+    {
+      "id": "glass_tube_rim_avoid",
+      "category": "chemistry_tube",
+      "superclass": "laboratory_vessel",
+      "affordance_type": "fragile_rim",
+      "material": "glass",
+      "fragility": 1.0,
+      "region": "rim",
+      "visual_aspect": 4.0,
+      "strategy": {
+        "skill_profile": "unsupported_fragile_rim",
+        "synergy": "precision",
+        "force_n": 1.5,
+        "aperture_m": 0.025,
+        "approach": "avoid_rim",
+        "lift_clearance_m": 0.3,
+        "pour_clearance_m": 0.18,
+        "max_pre_flask_tilt_deg": 8.0,
+        "pour_angle_deg": 120.0
+      }
+    },
+    {
+      "id": "plastic_tube_generic_pour",
+      "category": "chemistry_tube",
+      "superclass": "laboratory_vessel",
+      "affordance_type": "pourable_tube",
+      "material": "plastic",
+      "fragility": 0.2,
+      "region": "tube_body",
+      "visual_aspect": 4.0,
+      "strategy": {
+        "skill_profile": "plastic_tube_generic_pour",
+        "synergy": "power",
+        "force_n": 8.0,
+        "aperture_m": 0.03,
+        "approach": "lateral_body",
+        "lift_clearance_m": 0.2,
+        "pour_clearance_m": 0.1,
+        "max_pre_flask_tilt_deg": 20.0,
+        "pour_angle_deg": 115.0
+      }
+    }
+  ]
+}

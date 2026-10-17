@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "scope": "Guanghua tabletop mechanism pilot; compact auditable subset, not the paper's unavailable 116-entry knowledge base",
+  "visual_feature_space": "agentview_rgbd_visible_surface_height_over_planar_extent",
+  "cards": [
+    {
+      "id": "cube_rigid_body_power",
+      "category": "cube",
+      "superclass": "rigid_body",
+      "affordance_type": "graspable_body",
+      "material": "rigid",
+      "fragility": 0.1,
+      "region": "body",
+      "visual_aspect": 0.75,
+      "strategy": {"synergy": "power", "force_n": 18.0, "aperture_m": 0.075, "approach": "top"}
+    },
+    {
+      "id": "cube_flat_edge_side",
+      "category": "cube",
+      "superclass": "rigid_body",
+      "affordance_type": "graspable_body",
+      "material": "rigid",
+      "fragility": 0.1,
+      "region": "body",
+      "visual_aspect": 0.27,
+      "strategy": {"synergy": "side", "force_n": 9.0, "aperture_m": 0.04, "approach": "lateral"}
+    },
+    {
+      "id": "cylinder_narrow_pinch",
+      "category": "cylinder",
+      "superclass": "rigid_body",
+      "affordance_type": "pinchable",
+      "material": "rigid",
+      "fragility": 0.2,
+      "region": "body",
+      "visual_aspect": 2.1,
+      "strategy": {"synergy": "pinch", "force_n": 10.0, "aperture_m": 0.06, "approach": "top"}
+    },
+    {
+      "id": "cylinder_wide_power",
+      "category": "cylinder",
+      "superclass": "rigid_body",
+      "affordance_type": "pinchable",
+      "material": "rigid",
+      "fragility": 0.2,
+      "region": "body",
+      "visual_aspect": 0.9,
+      "strategy": {"synergy": "power", "force_n": 16.0, "aperture_m": 0.08, "approach": "top"}
+    },
+    {
+      "id": "glass_cylinder_cautious_side",
+      "category": "cylinder",
+      "superclass": "container",
+      "affordance_type": "fragile",
+      "material": "glass",
+      "fragility": 0.95,
+      "region": "body",
+      "visual_aspect": 2.2,
+      "strategy": {"synergy": "side", "force_n": 4.0, "aperture_m": 0.08, "approach": "lateral"}
+    },
+    {
+      "id": "sphere_rigid_power",
+      "category": "sphere",
+      "superclass": "rigid_body",
+      "affordance_type": "wrappable",
+      "material": "rigid",
+      "fragility": 0.1,
+      "region": "body",
+      "visual_aspect": 1.0,
+      "strategy": {"synergy": "power", "force_n": 16.0, "aperture_m": 0.07, "approach": "top"}
+    },
+    {
+      "id": "plate_edge_side",
+      "category": "plate",
+      "superclass": "rigid_body",
+      "affordance_type": "graspable_edge",
+      "material": "ceramic",
+      "fragility": 0.7,
+      "region": "edge",
+      "visual_aspect": 0.2,
+      "strategy": {"synergy": "side", "force_n": 5.0, "aperture_m": 0.035, "approach": "lateral"}
+    },
+    {
+      "id": "tool_handle_power",
+      "category": "tool",
+      "superclass": "handled_object",
+      "affordance_type": "tool_handle",
+      "material": "rigid",
+      "fragility": 0.1,
+      "region": "handle",
+      "visual_aspect": 3.0,
+      "strategy": {"synergy": "power", "force_n": 20.0, "aperture_m": 0.05, "approach": "lateral"}
+    }
+  ]
+}

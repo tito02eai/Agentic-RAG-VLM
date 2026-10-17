@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "scope": "Curated public high-school chemistry knowledge; no VLABench poses, rewards, episode targets or success labels",
+  "cards": [
+    {
+      "id": "reaction_silver_chloride_precipitation",
+      "intent": "form a white silver chloride precipitate",
+      "reagents": ["NaCl", "AgNO3"],
+      "products": ["AgCl"],
+      "handling_notes": ["keep both glass tubes upright during transit", "pour only above the flask"]
+    },
+    {
+      "id": "reaction_sulfuric_acid_sodium_hydroxide",
+      "intent": "neutralize sulfuric acid with sodium hydroxide",
+      "reagents": ["H2SO4", "NaOH"],
+      "products": ["Na2SO4", "H2O"],
+      "handling_notes": ["avoid splashing", "pour only above the flask"]
+    },
+    {
+      "id": "reaction_sodium_carbonate_hydrochloric_acid",
+      "intent": "neutralize sodium carbonate with hydrochloric acid and release carbon dioxide",
+      "reagents": ["Na2CO3", "HCl"],
+      "products": ["NaCl", "CO2", "H2O"],
+      "handling_notes": ["keep the tube upright before reaching the flask", "allow gas release"]
+    },
+    {
+      "id": "reaction_hydrochloric_acid_sodium_hydroxide",
+      "intent": "neutralize hydrochloric acid with sodium hydroxide",
+      "reagents": ["HCl", "NaOH"],
+      "products": ["NaCl", "H2O"],
+      "handling_notes": ["avoid splashing", "pour only above the flask"]
+    },
+    {
+      "id": "reaction_copper_hydroxide_precipitation",
+      "intent": "form a blue copper hydroxide precipitate",
+      "reagents": ["CuSO4", "NaOH"],
+      "products": ["Cu(OH)2"],
+      "handling_notes": ["avoid skin contact", "pour only above the flask"]
+    },
+    {
+      "id": "reaction_barium_chromate_precipitation",
+      "intent": "form a yellow barium chromate precipitate",
+      "reagents": ["BaCl2", "K2CrO4"],
+      "products": ["BaCrO4"],
+      "handling_notes": ["treat reagents as hazardous", "return tubes to their original slots"]
+    },
+    {
+      "id": "reaction_calcium_carbonate_precipitation",
+      "intent": "form a white calcium carbonate precipitate",
+      "reagents": ["Na2CO3", "CaCl2"],
+      "products": ["CaCO3"],
+      "handling_notes": ["keep glass vessels separated", "pour only above the flask"]
+    }
+  ]
+}

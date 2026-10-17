@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "scope": "VLABench add_condiment manipulation cards; no evaluator labels or object poses",
+  "cards": [
+    {
+      "id": "bbq_sauce_plastic_bottle_side_pour",
+      "category": "bbq_sauce",
+      "superclass": "pourable_condiment",
+      "affordance_type": "pourable_bottle",
+      "material": "plastic",
+      "fragility": 0.1,
+      "region": "bottle_body",
+      "visual_aspect": 2.4,
+      "strategy": {
+        "skill_profile": "bottle_side_grasp_then_pour",
+        "synergy": "side",
+        "force_n": 12.0,
+        "aperture_m": 0.055,
+        "approach": "lateral",
+        "keep_upright_until_above_container": true,
+        "pour_angle_deg": 180
+      }
+    },
+    {
+      "id": "bbq_sauce_glass_neck_gentle_pour",
+      "category": "bbq_sauce",
+      "superclass": "pourable_condiment",
+      "affordance_type": "pourable_bottle",
+      "material": "glass",
+      "fragility": 0.9,
+      "region": "bottle_neck",
+      "visual_aspect": 3.3,
+      "strategy": {
+        "skill_profile": "glass_neck_gentle_pour",
+        "synergy": "pinch",
+        "force_n": 5.0,
+        "aperture_m": 0.035,
+        "approach": "top",
+        "keep_upright_until_above_container": true,
+        "pour_angle_deg": 150
+      }
+    },
+    {
+      "id": "bbq_sauce_flexible_pouch_squeeze",
+      "category": "bbq_sauce",
+      "superclass": "pourable_condiment",
+      "affordance_type": "squeezable_pouch",
+      "material": "flexible",
+      "fragility": 0.2,
+      "region": "pouch_body",
+      "visual_aspect": 1.4,
+      "strategy": {
+        "skill_profile": "pouch_body_grasp_then_squeeze",
+        "synergy": "power",
+        "force_n": 8.0,
+        "aperture_m": 0.065,
+        "approach": "lateral",
+        "keep_upright_until_above_container": true,
+        "pour_angle_deg": 120
+      }
+    },
+    {
+      "id": "salt_shaker_body_pour",
+      "category": "salt",
+      "superclass": "pourable_condiment",
+      "affordance_type": "shaker",
+      "material": "rigid",
+      "fragility": 0.1,
+      "region": "body",
+      "visual_aspect": 2.0,
+      "strategy": {
+        "skill_profile": "shaker_body_grasp_then_pour",
+        "synergy": "power",
+        "force_n": 10.0,
+        "aperture_m": 0.05,
+        "approach": "lateral",
+        "keep_upright_until_above_container": true,
+        "pour_angle_deg": 100
+      }
+    },
+    {
+      "id": "salad_dressing_bottle_side_pour",
+      "category": "salad_dressing",
+      "superclass": "pourable_condiment",
+      "affordance_type": "pourable_bottle",
+      "material": "plastic",
+      "fragility": 0.1,
+      "region": "bottle_body",
+      "visual_aspect": 2.7,
+      "strategy": {
+        "skill_profile": "bottle_side_grasp_then_pour",
+        "synergy": "side",
+        "force_n": 11.0,
+        "aperture_m": 0.055,
+        "approach": "lateral",
+        "keep_upright_until_above_container": true,
+        "pour_angle_deg": 180
+      }
+    }
+  ]
+}

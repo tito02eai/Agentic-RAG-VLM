@@ -1,0 +1,42 @@
+{
+  "project_name": "Agentic RAG-VLM for Humanoid Robot",
+  "target_roles": [
+    "具身智能 / VLA 算法工程师",
+    "AI Agent / 多模态应用工程师"
+  ],
+  "challenge_dir": "output/qwen35_challenge_v4_agent_routing_main",
+  "video": "output/defense_suite/agentic_rag_vlm_full_defense_reel_v5.mp4",
+  "video_validation": "output/defense_suite/agentic_rag_vlm_full_defense_reel_v5.validation.json",
+  "g0b_receipt": "output/g0b_contact_admission_audit_v1/receipt.json",
+  "expected": {
+    "method_rollouts": 100,
+    "vlm_calls": 246,
+    "endpoint_errors": 0,
+    "public_events": 260,
+    "agent_tool_calls": 60,
+    "tests_collected": 40,
+    "full_agent_success": {
+      "G1": [10, 10],
+      "G2": [10, 10],
+      "G3": [10, 10],
+      "G4": [10, 10]
+    },
+    "ablations": {
+      "G1/B0_vlm_only": [1, 10],
+      "G2/A_no_graph": [0, 10],
+      "G3/A_no_memory": [0, 10],
+      "G3/A_no_replan": [5, 10],
+      "G4/C1_local": [0, 10],
+      "G4/B0_skill_only": [1, 10]
+    },
+    "video": {
+      "width": 1920,
+      "height": 1080,
+      "fps": "30/1",
+      "frames": 1887,
+      "duration_s": 62.9,
+      "sha256": "cf3b3f40c0a6adcfd55342ccddf677b7b874d3ca6da28cc803b08b79cb12b8db"
+    },
+    "g0b_decision": "NOT_ADMITTED"
+  }
+}

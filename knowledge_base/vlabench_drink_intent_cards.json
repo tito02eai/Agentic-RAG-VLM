@@ -1,0 +1,23 @@
+{
+  "schema_version": "agentic_rag_vlm.vlabench.drink_intent_cards.v1",
+  "cards": [
+    {
+      "id": "healthy_post_sport_juice",
+      "intent_terms": ["healthy", "sport", "thirsty", "cool"],
+      "target_category": "juice",
+      "rationale": "Fruit juice is the healthy refreshment option among soda and energy-drink alternatives."
+    },
+    {
+      "id": "high_energy_drink",
+      "intent_terms": ["energy", "caffeine", "boost"],
+      "target_category": "monster",
+      "rationale": "Energy drinks fit an explicit caffeine or energy-boost request."
+    },
+    {
+      "id": "sweet_soda",
+      "intent_terms": ["soda", "sweet", "cola"],
+      "target_category": "spirit",
+      "rationale": "Soda fits an explicit sweet carbonated-drink request."
+    }
+  ]
+}
