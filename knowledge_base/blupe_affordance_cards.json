@@ -1,0 +1,73 @@
+{
+  "schema_version": "agentic_rag_vlm.blupe_cards.v1",
+  "scope": "BluPe remote platform stage plan: stage 1 single objects (cup/bottle/banana/cube), stage 2 fragile neighbor (vase protected), stage 3 multi-object cleanup; parameters are recommendations translated by the platform transport, not calibration claims",
+  "visual_feature_space": "platform_observation_height_over_planar_extent_or_default_1.0",
+  "cards": [
+    {
+      "id": "cup_power_top",
+      "category": "cup",
+      "superclass": "container",
+      "affordance_type": "graspable_body",
+      "material": "ceramic",
+      "fragility": 0.6,
+      "region": "body",
+      "visual_aspect": 0.9,
+      "strategy": {"synergy": "power", "force_n": 8.0, "aperture_m": 0.06, "approach": "top"}
+    },
+    {
+      "id": "cup_side_lateral",
+      "category": "cup",
+      "superclass": "container",
+      "affordance_type": "graspable_body",
+      "material": "ceramic",
+      "fragility": 0.6,
+      "region": "body",
+      "visual_aspect": 0.35,
+      "strategy": {"synergy": "side", "force_n": 5.0, "aperture_m": 0.045, "approach": "lateral"}
+    },
+    {
+      "id": "bottle_power_top",
+      "category": "bottle",
+      "superclass": "container",
+      "affordance_type": "graspable_body",
+      "material": "plastic",
+      "fragility": 0.3,
+      "region": "body",
+      "visual_aspect": 2.4,
+      "strategy": {"synergy": "power", "force_n": 10.0, "aperture_m": 0.055, "approach": "top"}
+    },
+    {
+      "id": "banana_pinch_lateral",
+      "category": "banana",
+      "superclass": "deformable_body",
+      "affordance_type": "pinchable",
+      "material": "organic",
+      "fragility": 0.4,
+      "region": "body",
+      "visual_aspect": 0.5,
+      "strategy": {"synergy": "pinch", "force_n": 6.0, "aperture_m": 0.04, "approach": "lateral"}
+    },
+    {
+      "id": "cube_power_top",
+      "category": "cube",
+      "superclass": "rigid_body",
+      "affordance_type": "graspable_body",
+      "material": "rigid",
+      "fragility": 0.1,
+      "region": "body",
+      "visual_aspect": 0.75,
+      "strategy": {"synergy": "power", "force_n": 18.0, "aperture_m": 0.075, "approach": "top"}
+    },
+    {
+      "id": "vase_protected_no_grasp",
+      "category": "vase",
+      "superclass": "container",
+      "affordance_type": "fragile",
+      "material": "glass",
+      "fragility": 1.0,
+      "region": "body",
+      "visual_aspect": 2.2,
+      "strategy": {"synergy": "do_not_grasp", "force_n": 0.0, "aperture_m": 0.0, "approach": "none"}
+    }
+  ]
+}

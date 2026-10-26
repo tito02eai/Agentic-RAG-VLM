@@ -1,0 +1,9 @@
+{
+  "schema_version": "agentic_rag_vlm.task_spec.blupe.stage1.example.v1",
+  "task_id": "blupe_stage1_pick_cup",
+  "instruction": "Pick the cup and place it on the tray",
+  "subgoals": [
+    {"target": "cup", "destination": "tray_zone"}
+  ],
+  "protected_objects": []
+}

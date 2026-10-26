@@ -1,0 +1,13 @@
+{
+  "schema_version": "agentic_rag_vlm.platform_config.blupe.example.v1",
+  "platform": "blupe",
+  "auth_token_env": "BLUPE_API_TOKEN",
+  "endpoint_base": "https://api.blupe.io/v1",
+  "robot_id": "yam-01",
+  "camera_ids": ["front", "wrist_right"],
+  "request_timeout_s": 30.0,
+  "max_retries": 2,
+  "extra": {
+    "note": "endpoint_base is a placeholder until the BluPe API contract is received; see docs/BLUPE_DEPLOYMENT.md"
+  }
+}

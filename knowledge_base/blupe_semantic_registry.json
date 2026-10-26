@@ -1,0 +1,51 @@
+{
+  "schema_version": "agentic_rag_vlm.semantic_registry.blupe.v1",
+  "scope": "BluPe remote dual-arm platform stage plan: stage 1 single objects (cup/bottle/banana/cube), stage 2 fragile-neighbor (cup next to vase), stage 3 multi-object cleanup; bin picking priority",
+  "objects": {
+    "cup": {
+      "category": "cup",
+      "superclass": "container",
+      "affordance_type": "graspable_body",
+      "material": "ceramic",
+      "fragility": 0.6,
+      "region": "body",
+      "expected_synergy": "power"
+    },
+    "bottle": {
+      "category": "bottle",
+      "superclass": "container",
+      "affordance_type": "graspable_body",
+      "material": "plastic",
+      "fragility": 0.3,
+      "region": "body",
+      "expected_synergy": "power"
+    },
+    "banana": {
+      "category": "banana",
+      "superclass": "deformable_body",
+      "affordance_type": "pinchable",
+      "material": "organic",
+      "fragility": 0.4,
+      "region": "body",
+      "expected_synergy": "pinch"
+    },
+    "cube": {
+      "category": "cube",
+      "superclass": "rigid_body",
+      "affordance_type": "graspable_body",
+      "material": "rigid",
+      "fragility": 0.1,
+      "region": "body",
+      "expected_synergy": "power"
+    },
+    "vase": {
+      "category": "vase",
+      "superclass": "container",
+      "affordance_type": "fragile",
+      "material": "glass",
+      "fragility": 1.0,
+      "region": "body",
+      "expected_synergy": "do_not_grasp"
+    }
+  }
+}
