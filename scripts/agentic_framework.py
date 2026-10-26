@@ -16,6 +16,16 @@ from typing import Iterable, Mapping
 import numpy as np
 
 
+SEMANTIC_REGISTRY_FIELDS = (
+    "category",
+    "superclass",
+    "affordance_type",
+    "material",
+    "fragility",
+    "region",
+    "expected_synergy",
+)
+
 SEMANTIC_OBJECTS = {
     "red_cube": {
         "category": "cube",
@@ -75,13 +85,44 @@ class RetrievalResult:
         return asdict(self)
 
 
-def semantic_adapter(estimates: Mapping[str, object]) -> dict[str, PublicObject]:
-    """Convert public color/depth estimates into frozen semantic descriptors."""
+def load_semantic_registry(path: Path) -> dict[str, dict[str, object]]:
+    """Load a JSON semantic registry mapping object names to frozen descriptors.
+
+    Expected shape: ``{"schema_version": ..., "objects": {name: {field: value}}}``
+    with exactly the fields listed in ``SEMANTIC_REGISTRY_FIELDS``.  This keeps
+    the semantic layer data-driven so non-Guanghua deployments (for example the
+    BluPe remote platform) can register their own object catalogue without
+    touching frozen experiment code paths.
+    """
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    objects = payload.get("objects")
+    if not isinstance(objects, dict) or not objects:
+        raise ValueError(f"semantic registry {path} must contain a non-empty 'objects' mapping")
+    registry: dict[str, dict[str, object]] = {}
+    for name, entry in objects.items():
+        missing = [field for field in SEMANTIC_REGISTRY_FIELDS if field not in entry]
+        if missing:
+            raise ValueError(f"semantic registry entry '{name}' in {path} is missing fields: {missing}")
+        registry[str(name)] = {field: entry[field] for field in SEMANTIC_REGISTRY_FIELDS}
+    return registry
+
+
+def semantic_adapter(
+    estimates: Mapping[str, object],
+    *,
+    registry: Mapping[str, Mapping[str, object]] | None = None,
+) -> dict[str, PublicObject]:
+    """Convert public color/depth estimates into frozen semantic descriptors.
+
+    ``registry`` defaults to the built-in Guanghua objects so frozen experiment
+    scripts are unaffected; pass a loaded registry for other deployments.
+    """
+    semantic_registry = SEMANTIC_OBJECTS if registry is None else dict(registry)
     objects: dict[str, PublicObject] = {}
     for name, estimate in estimates.items():
-        if name not in SEMANTIC_OBJECTS:
+        if name not in semantic_registry:
             continue
-        semantic = SEMANTIC_OBJECTS[name]
+        semantic = semantic_registry[name]
         minimum = np.asarray(estimate.visible_surface_min_xyz_m, dtype=float)
         maximum = np.asarray(estimate.visible_surface_max_xyz_m, dtype=float)
         extent = np.maximum(maximum - minimum, 1e-4)
