@@ -4,6 +4,10 @@
 # Last verified combination (Python 3.11): mujoco 3.8.1, numpy 1.26.4,
 # Pillow 12.3.0, pytest 8.3.5, scipy 1.17.1.  Upper bounds exclude untested
 # next major versions; they do not imply that those releases are known-broken.
+#
+# This file installs the full simulation experiment stack.  Remote platform
+# deployment machines only need the core: pip install -e . (see pyproject.toml,
+# extras: sim, dev).
 mujoco>=3.2,<4
 numpy>=1.26,<2
 Pillow>=10.0

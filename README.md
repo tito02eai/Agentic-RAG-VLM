@@ -46,6 +46,7 @@ sim-to-real. The earlier Guanghua G0-B contact-dynamics grasp remains
 Key documentation:
 
 - [Current experiment progress and defense narrative](docs/CURRENT_EXPERIMENT_PROGRESS.md)
+- [BluPe remote-platform deployment plan and pending API questions](docs/BLUPE_DEPLOYMENT.md)
 - [Reproduction boundary](docs/REPRODUCTION.md)
 - [Challenge v4 (Agent-tool routing) results](docs/AGENT_TOOLS_V4_RESULTS.md)
 - [Chinese paper/method introduction (engineering-status sections are historical)](docs/PROJECT_INTRODUCTION_CN.md)
@@ -56,10 +57,18 @@ Key documentation:
   memory, and adapter interfaces.
 - `agentic_rag_vlm/runtime.py`: reusable multi-subgoal
   observe/plan/execute/verify/monitor/replan state machine.
+- `agentic_rag_vlm/platform/`: remote-platform deployment layer (config,
+  transport, perception, command translation, verification, session driver)
+  for the planned BluPe deployment; see
+  [docs/BLUPE_DEPLOYMENT.md](docs/BLUPE_DEPLOYMENT.md).
 - `scripts/`: experiment entry points, renderers, validators, and summarizers
   (see headings below).
 - `knowledge_base/affordance_cards.json`: compact, auditable Guanghua
   affordance-card library.
+- `knowledge_base/blupe_semantic_registry.json` and
+  `knowledge_base/blupe_affordance_cards.json`: frozen semantic registry and
+  affordance cards for the BluPe stage plan (single objects, fragile
+  neighbor, multi-object cleanup).
 - `knowledge_base/vlabench_*.json`: affordance-card libraries for the VLABench
   tasks (chemistry, condiment, drink intent, food, reaction, recipe).
 - `configs/`: frozen scene, condition, seed, metric, and evidence contracts.
@@ -110,11 +119,16 @@ execution trace rather than being hidden simulator interventions.
 ## Setup
 
 ```bash
+# Full simulation experiment stack
 pip install -r requirements.txt
+
+# Core decision framework only (no MuJoCo; platform deployment machines)
+pip install -e .
 ```
 
 Python 3.10+ is required. The verified dependency combination is recorded in
-`requirements.txt`.
+`requirements.txt`; the core/sim/dev dependency split is declared in
+`pyproject.toml`.
 
 ## Tests in a clean environment
 

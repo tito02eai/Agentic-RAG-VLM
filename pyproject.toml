@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentic-rag-vlm"
+version = "0.2.0"
+description = "Agentic RAG-VLM: affordance-aware retrieval-augmented planning with self-reflective recovery for robotic manipulation"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = [
+    # Core decision framework only: platform sessions and the mock transport
+    # run with numpy alone, so remote-robot deployment machines do not need
+    # a MuJoCo runtime.
+    "numpy>=1.26,<2",
+]
+
+[project.optional-dependencies]
+sim = [
+    # Guanghua/VLABench simulation experiments and asset preparation.
+    "mujoco>=3.2,<4",
+    "Pillow>=10.0",
+    "scipy>=1.11,<2",
+]
+dev = [
+    "pytest>=8.0,<9",
+]
+
+[tool.setuptools]
+packages = ["agentic_rag_vlm", "agentic_rag_vlm.platform", "scripts"]
