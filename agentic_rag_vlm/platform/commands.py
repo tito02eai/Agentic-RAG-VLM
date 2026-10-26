@@ -1,0 +1,91 @@
+"""Platform command intermediate representation and GraspAction translation.
+
+``PlatformCommand`` is the framework's own action schema (target selection,
+grasp parameters, scene-graph constraint, and optional placement destination).
+A platform-specific transport translates it into the remote API's primitive
+calls.  Keeping this layer explicit means that when the BluPe API contract
+arrives, only the transport translation changes — the pipeline, mapper, and
+session code stay frozen.
+"""
+
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field
+from typing import Any
+
+from ..pipeline import GraspAction
+
+
+COMMAND_TYPES = ("pick", "place", "home")
+
+
+@dataclass(frozen=True)
+class PlatformCommand:
+    command_id: str
+    command_type: str
+    target: str
+    origin: str
+    parameters: dict[str, Any] = field(default_factory=dict)
+    constraint: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+class GraspActionMapper:
+    """Translate pipeline ``GraspAction`` outputs into platform commands."""
+
+    def __init__(self, *, command_prefix: str = "cmd") -> None:
+        self.command_prefix = command_prefix
+        self._counter = 0
+
+    def _next_id(self, command_type: str) -> str:
+        self._counter += 1
+        return f"{self.command_prefix}_{self._counter:04d}_{command_type}"
+
+    def pick_command(self, action: GraspAction) -> PlatformCommand:
+        strategy = dict(action.strategy)
+        parameters = {
+            "position_xyz_m": list(action.position_xyz_m),
+            "synergy": strategy.get("synergy", "power"),
+            "force_n": float(strategy.get("force_n", 10.0)),
+            "aperture_m": float(strategy.get("aperture_m", 0.07)),
+            "approach": strategy.get("approach", "top"),
+        }
+        return PlatformCommand(
+            command_id=self._next_id("pick"),
+            command_type="pick",
+            target=action.target,
+            origin=action.source,
+            parameters=parameters,
+            constraint=dict(action.constraint),
+        )
+
+    def place_command(
+        self,
+        action: GraspAction,
+        destination: str,
+        *,
+        destination_xyz_m: tuple[float, float, float] | None = None,
+    ) -> PlatformCommand:
+        parameters: dict[str, Any] = {"destination": destination}
+        if destination_xyz_m is not None:
+            parameters["destination_xyz_m"] = list(destination_xyz_m)
+        return PlatformCommand(
+            command_id=self._next_id("place"),
+            command_type="place",
+            target=action.target,
+            origin=action.source,
+            parameters=parameters,
+            constraint=dict(action.constraint),
+        )
+
+    def home_command(self) -> PlatformCommand:
+        return PlatformCommand(
+            command_id=self._next_id("home"),
+            command_type="home",
+            target="",
+            origin="session",
+            parameters={},
+            constraint={},
+        )
