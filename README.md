@@ -46,7 +46,7 @@ sim-to-real. The earlier Guanghua G0-B contact-dynamics grasp remains
 Key documentation:
 
 - [Current experiment progress and defense narrative](docs/CURRENT_EXPERIMENT_PROGRESS.md)
-- [BluPe remote-platform deployment plan and pending API questions](docs/BLUPE_DEPLOYMENT.md)
+- [BluPe remote-platform deployment guide (implemented Session API client, YAM kinematics, motion planning)](docs/BLUPE_DEPLOYMENT.md)
 - [Reproduction boundary](docs/REPRODUCTION.md)
 - [Challenge v4 (Agent-tool routing) results](docs/AGENT_TOOLS_V4_RESULTS.md)
 - [Chinese paper/method introduction (engineering-status sections are historical)](docs/PROJECT_INTRODUCTION_CN.md)
@@ -57,9 +57,10 @@ Key documentation:
   memory, and adapter interfaces.
 - `agentic_rag_vlm/runtime.py`: reusable multi-subgoal
   observe/plan/execute/verify/monitor/replan state machine.
-- `agentic_rag_vlm/platform/`: remote-platform deployment layer (config,
-  transport, perception, command translation, verification, session driver)
-  for the planned BluPe deployment; see
+- `agentic_rag_vlm/platform/`: remote-platform deployment layer for the BluPe
+  YAM station — Session API client, URDF-derived 6-DOF kinematics and IK,
+  deterministic motion planning, transport (remote + offline mock), perception,
+  command translation, verification, and the session driver; see
   [docs/BLUPE_DEPLOYMENT.md](docs/BLUPE_DEPLOYMENT.md).
 - `scripts/`: experiment entry points, renderers, validators, and summarizers
   (see headings below).
@@ -72,7 +73,8 @@ Key documentation:
 - `knowledge_base/vlabench_*.json`: affordance-card libraries for the VLABench
   tasks (chemistry, condiment, drink intent, food, reaction, recipe).
 - `configs/`: frozen scene, condition, seed, metric, and evidence contracts.
-- `tests/`: asset, framework, challenge, and runtime regression tests.
+- `tests/`: asset, framework, challenge, runtime, and platform-deployment
+  (kinematics, API client, motion planner, remote transport) regression tests.
 - `docs/`: experiment plans, frozen results, and claim boundaries.
 - `paper/`: LaTeX sources, figures, `references.bib`, and compiled pre/final
   PDFs of the IROS 2026 submission.
