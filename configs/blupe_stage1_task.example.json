@@ -1,9 +1,13 @@
 {
-  "schema_version": "agentic_rag_vlm.task_spec.blupe.stage1.example.v1",
+  "schema_version": "agentic_rag_vlm.task_spec.blupe.stage1.example.v2",
   "task_id": "blupe_stage1_pick_cup",
   "instruction": "Pick the cup and place it on the tray",
   "subgoals": [
     {"target": "cup", "destination": "tray_zone"}
   ],
-  "protected_objects": []
+  "protected_objects": [],
+  "destinations": {
+    "tray_zone": [0.0, -0.10, 0.55]
+  },
+  "destination_frame_note": "destinations are in the top camera optical frame (x right, y down, z forward, meters) for remote mode; mock mode treats them as scene coordinates"
 }
