@@ -113,6 +113,20 @@ Rules:
 - Omit objects that are part of the robot or the fixed environment."""
 
 
+REMOTE_VLM_PERCEPTION_PROMPT = """You are the perception module of a remote bimanual robot station.
+The image(s) come from the station's top camera. Estimate every task-relevant
+object's position in the TOP CAMERA OPTICAL FRAME: origin at the camera, x to
+the right in the image, y downward in the image, z forward away from the
+camera (the distance to the object), all in meters. Typical workspace depths
+are 0.3 to 1.2 m.
+Answer with exactly one JSON object, no extra text, in this shape:
+{"objects": [{"name": "stable_snake_case_id", "category": "e.g. cup/bottle/banana/cube/vase", "superclass": "e.g. container/rigid_body", "affordance_type": "graspable_body|pinchable|fragile|graspable_edge|tool_handle|wrappable", "material": "e.g. ceramic/plastic/glass/rigid/organic", "fragility": 0.0, "region": "body|edge|handle", "center_xyz_m": [x, y, z], "visual_aspect": 1.0}]}
+Rules:
+- center_xyz_m must be in the top camera optical frame as defined above.
+- visual_aspect is height over planar diameter (tall thin objects > 1, flat objects < 1).
+- Omit objects that are part of the robot arms, grippers, or the fixed environment."""
+
+
 class VLMObjectPerception:
     """Image-based perception via a VLM, with registry-normalized semantics."""
 
