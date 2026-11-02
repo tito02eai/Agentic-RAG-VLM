@@ -8,14 +8,17 @@ Offline dry run (no network, deterministic mock transport):
       --registry knowledge_base/blupe_semantic_registry.json \
       --mock --output output/blupe_session_dryrun
 
-Remote mode waits for the BluPe API contract (see docs/BLUPE_DEPLOYMENT.md)
-and currently fails fast with an instructive error:
+Remote mode against the BluPe Session API (requires --vlm-endpoint/--vlm-model
+for image-based perception; joins the robot queue, then commands the station
+through deterministic YAM IK trajectories; see docs/BLUPE_DEPLOYMENT.md):
 
+    export BLUPE_API_TOKEN=...  # optional, only if the deployment requires one
     python scripts/run_platform_session.py \
       --task configs/blupe_stage1_task.example.json \
       --cards knowledge_base/blupe_affordance_cards.json \
       --registry knowledge_base/blupe_semantic_registry.json \
       --platform-config configs/blupe_platform.example.json \
+      --vlm-endpoint http://localhost:8000/v1 --vlm-model qwen2.5-vl-7b \
       --output output/blupe_session_run
 """
 
@@ -36,6 +39,7 @@ from agentic_rag_vlm.platform import (  # noqa: E402
     MockPlatformTransport,
     PlatformUnavailableError,
     RegistryMetadataPerception,
+    REMOTE_VLM_PERCEPTION_PROMPT,
     RemotePlatformTransport,
     SceneChangeVerifier,
     VLMObjectPerception,
@@ -57,7 +61,7 @@ DEFAULT_MOCK_SCENE: dict[str, dict[str, list[float]]] = {
 }
 
 
-def load_task(path: Path) -> TaskSpec:
+def load_task(path: Path) -> tuple[TaskSpec, dict[str, tuple[float, float, float]]]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     for key in ("task_id", "instruction", "subgoals"):
         if key not in payload:
@@ -67,12 +71,17 @@ def load_task(path: Path) -> TaskSpec:
     )
     if not subgoals:
         raise ValueError(f"task file {path} must contain at least one subgoal")
-    return TaskSpec(
+    destinations = {
+        str(name): (float(xyz[0]), float(xyz[1]), float(xyz[2]))
+        for name, xyz in payload.get("destinations", {}).items()
+    }
+    task = TaskSpec(
         task_id=str(payload["task_id"]),
         instruction=str(payload["instruction"]),
         subgoals=subgoals,
         protected_objects=tuple(str(item) for item in payload.get("protected_objects", [])),
     )
+    return task, destinations
 
 
 def load_mock_scene(path: Path | None) -> dict:
@@ -96,12 +105,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--vlm-endpoint", default=None, help="OpenAI-compatible VLM endpoint for image-based perception")
     parser.add_argument("--vlm-model", default=None, help="VLM model name for image-based perception")
     parser.add_argument("--max-replans", type=int, default=1, help="maximum replans per session (default: 1)")
+    parser.add_argument("--arm", choices=("left", "right"), default="right", help="operating arm for remote mode")
+    parser.add_argument("--run-duration-s", type=int, default=300, help="remote session duration (60-600 s)")
+    parser.add_argument("--queue-timeout-s", type=float, default=600.0, help="remote queue wait timeout")
+    parser.add_argument("--no-wait", action="store_true", help="create the remote session without waiting for control")
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    task = load_task(args.task)
+    task, task_destinations = load_task(args.task)
     registry = load_semantic_registry(args.registry)
     cards = json.loads(args.cards.read_text(encoding="utf-8"))["cards"]
     runtime = AgenticRuntime(
@@ -109,6 +122,7 @@ def main() -> int:
         RuntimeConfig(maximum_replans=args.max_replans),
     )
     mode = "unknown"
+    remote_transport: RemotePlatformTransport | None = None
 
     if args.mock:
         mode = "mock"
@@ -121,17 +135,44 @@ def main() -> int:
         if args.platform_config is None:
             print("error: remote mode requires --platform-config (or use --mock for an offline dry run)", file=sys.stderr)
             return 2
+        if not (args.vlm_endpoint and args.vlm_model):
+            print(
+                "error: remote mode requires --vlm-endpoint and --vlm-model "
+                "(the station provides images, not object metadata)",
+                file=sys.stderr,
+            )
+            return 2
         mode = "remote"
-        transport = RemotePlatformTransport(load_platform_config(args.platform_config))
+        config = load_platform_config(args.platform_config)
+        remote_transport = RemotePlatformTransport(
+            config,
+            destinations=task_destinations,
+            arm=args.arm,
+            run_duration_s=args.run_duration_s,
+            prompt=task.instruction,
+        )
+        transport = remote_transport
         try:
-            transport.health_check()
+            health = dict(transport.health_check())
+            print("health_check:", json.dumps(health, indent=2))
+            if not health.get("robot_registered") or not health.get("station_connected"):
+                print("error: station not reachable for a session; aborting before queueing", file=sys.stderr)
+                return 2
+            session_info = dict(
+                transport.start_session(timeout_s=args.queue_timeout_s, wait=not args.no_wait)
+            )
+            print("session:", json.dumps(session_info, indent=2))
         except PlatformUnavailableError as error:
             print(f"error: {error}", file=sys.stderr)
             return 2
 
     if args.vlm_endpoint and args.vlm_model:
         client = OpenAICompatibleQwenVL(args.vlm_endpoint, args.vlm_model)
-        perception = VLMObjectPerception(client, registry)
+        prompt = REMOTE_VLM_PERCEPTION_PROMPT if mode == "remote" else None
+        if prompt is not None:
+            perception = VLMObjectPerception(client, registry, prompt=prompt)
+        else:
+            perception = VLMObjectPerception(client, registry)
     else:
         perception = RegistryMetadataPerception(registry)
 
@@ -142,7 +183,15 @@ def main() -> int:
         GraspActionMapper(command_prefix=f"{task.task_id}"),
         SceneChangeVerifier(),
     )
-    result = session.run(task)
+    try:
+        result = session.run(task)
+    finally:
+        if remote_transport is not None:
+            try:
+                stop_info = dict(remote_transport.stop_session())
+                print("session stopped:", json.dumps(stop_info, indent=2))
+            except PlatformUnavailableError as error:
+                print(f"warning: session stop failed: {error}", file=sys.stderr)
     result["mode"] = mode
     result["inputs"] = {
         "task": str(args.task),
