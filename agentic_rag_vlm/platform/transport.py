@@ -6,23 +6,35 @@ implementations are provided:
 
 - ``MockPlatformTransport``: a deterministic offline transport used for
   protocol qualification and dry runs without any network access.
-- ``RemotePlatformTransport``: a placeholder that fails fast until the BluPe
-  API contract (observation format, control primitive level, safety limits,
-  quota) is received and implemented.  The four open API questions are listed
-  in ``docs/BLUPE_DEPLOYMENT.md``.
+- ``RemotePlatformTransport``: the BluPe Session API transport.  It downloads
+  the station's camera JPEGs for perception, translates ``PlatformCommand``
+  pick/place into joint trajectories through the deterministic YAM IK motion
+  planner, submits them as 10 Hz waypoint packets, and follows the episode
+  trace until each packet completes.  Perception coordinates are expressed in
+  the top camera's optical frame and mapped into the selected arm's base
+  frame with the station's published calibration.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Mapping, Protocol, Sequence
 
+from .blupe_client import (
+    BluPeAPIError,
+    BluPeSessionClient,
+    SessionHandle,
+    TrajectoryBuilder,
+)
 from .commands import PlatformCommand
 from .config import PlatformConfig
+from .kinematics import NUM_JOINTS, YamKinematics
+from .motion import MotionPlan, MotionPlanError, YamMotionPlanner
 
 
 class PlatformUnavailableError(RuntimeError):
-    """Raised when a remote platform transport is used before its API contract is implemented."""
+    """Raised when the remote platform transport cannot proceed safely."""
 
 
 @dataclass(frozen=True)
@@ -65,33 +77,375 @@ class PlatformTransport(Protocol):
     def send_command(self, command: PlatformCommand) -> Mapping[str, Any]: ...
 
 
-class RemotePlatformTransport:
-    """Fails fast; implement against the BluPe API once its contract arrives.
+def _as_matrix(nested: Sequence[Sequence[float]]) -> list[list[float]]:
+    return [[float(value) for value in row] for row in nested]
 
-    Pending API questions (tracked in docs/BLUPE_DEPLOYMENT.md):
-    1. observation format: RGB-D or RGB-only, camera views, object metadata;
-    2. control primitive level (named skills vs. Cartesian/joint targets);
-    3. safety limits and interruption semantics;
-    4. quota, rate limits, and open-source requirements.
+
+class RemotePlatformTransport:
+    """BluPe Session API transport for one remote YAM station.
+
+    Lifecycle: construct (or ``connect``) -> ``health_check`` -> ``start_session``
+    (joins the queue and waits for control) -> ``get_observation`` /
+    ``send_command`` per the session loop -> ``stop_session``.  Every command
+    returns a receipt with the planned keyframes, submitted packets, and the
+    platform's trajectory results, preserving the audit discipline used
+    elsewhere in this repository.
     """
 
-    def __init__(self, config: PlatformConfig) -> None:
+    def __init__(
+        self,
+        config: PlatformConfig,
+        *,
+        client: BluPeSessionClient | None = None,
+        motion_planner: YamMotionPlanner | None = None,
+        destinations: Mapping[str, Sequence[float]] | None = None,
+        image_dir: Path | str = "output/blupe/images",
+        arm: str = "right",
+        prompt: str = "Agentic RAG-VLM remote pick-and-place session",
+        run_duration_s: int = 300,
+        session_model: str | None = None,
+        require_settled_first_command: bool = True,
+    ) -> None:
+        if config.platform != "blupe":
+            raise ValueError(
+                f"RemotePlatformTransport targets 'blupe', got platform {config.platform!r}"
+            )
+        if arm not in {"left", "right"}:
+            raise ValueError(f"arm must be 'left' or 'right', got {arm!r}")
         self.config = config
+        self.arm = arm
+        self.prompt = prompt
+        self.run_duration_s = int(run_duration_s)
+        self.session_model = session_model
+        self.require_settled_first_command = require_settled_first_command
+        self.image_dir = Path(image_dir)
+        self.destinations: dict[str, tuple[float, float, float]] = {
+            str(name): (float(xyz[0]), float(xyz[1]), float(xyz[2]))
+            for name, xyz in (destinations or {}).items()
+        }
+        self.client = client or BluPeSessionClient(
+            config.endpoint_base or "",
+            request_timeout_s=config.request_timeout_s,
+            max_retries=config.max_retries,
+            auth_token_env=config.auth_token_env,
+        )
+        self.motion_planner = motion_planner or YamMotionPlanner(YamKinematics())
+        self.handle: SessionHandle | None = None
+        self._observation_counter = 0
+        self._step_id = 0
+        self._waypoints_submitted = 0
+        self._trajectory_counter = 0
+        self._calibration: dict[str, Any] | None = None
+        self._last_station: dict[str, Any] = {}
+        self._first_command_sent = False
 
-    def _fail(self, operation: str) -> None:
-        raise PlatformUnavailableError(
-            f"remote platform '{self.config.platform}' operation '{operation}' is not implemented: "
-            "the BluPe API contract has not been received yet; see docs/BLUPE_DEPLOYMENT.md"
+    # ------------------------------------------------------------ helpers
+
+    def _require_handle(self) -> SessionHandle:
+        if self.handle is None:
+            raise PlatformUnavailableError(
+                "no active session; call start_session() before commanding the robot"
+            )
+        return self.handle
+
+    def _station(self) -> dict[str, Any]:
+        robot_id = self.config.robot_id
+        if robot_id is None:
+            raise PlatformUnavailableError("platform config is missing robot_id")
+        try:
+            self._last_station = self.client.get_station_observation(robot_id)
+        except BluPeAPIError as error:
+            raise PlatformUnavailableError(f"station observation failed: {error}") from error
+        return self._last_station
+
+    def calibration(self) -> dict[str, Any]:
+        if self._calibration is None:
+            robot_id = self.config.robot_id
+            if robot_id is None:
+                raise PlatformUnavailableError("platform config is missing robot_id")
+            self._calibration = self.client.get_calibration(robot_id)
+        return self._calibration
+
+    def _camera_to_base(self, position_m: Sequence[float]) -> tuple[float, float, float]:
+        """Map a top-camera optical frame point into the operating arm's base frame."""
+        calibration = self.calibration()
+        top = calibration.get("cameras", {}).get("top", {})
+        transforms = top.get("T_base_camera", {})
+        matrix = transforms.get(self.arm) or transforms.get(
+            "right" if self.arm == "right" else "left"
+        )
+        if matrix is None:
+            raise PlatformUnavailableError(
+                f"calibration has no top-camera T_base_camera for arm '{self.arm}'"
+            )
+        rows = _as_matrix(matrix)
+        x, y, z = float(position_m[0]), float(position_m[1]), float(position_m[2])
+        return (
+            rows[0][0] * x + rows[0][1] * y + rows[0][2] * z + rows[0][3],
+            rows[1][0] * x + rows[1][1] * y + rows[1][2] * z + rows[1][3],
+            rows[2][0] * x + rows[2][1] * y + rows[2][2] * z + rows[2][3],
         )
 
+    def _current_arm_state(self) -> tuple[tuple[float, ...], float | None, tuple[float, ...], float | None]:
+        station = self._last_station or self._station()
+        joints_key = f"{self.arm}_joints_deg"
+        other_key = "left_joints_deg" if self.arm == "right" else "right_joints_deg"
+        joints = tuple(float(value) for value in station.get(joints_key, ()))
+        other = tuple(float(value) for value in station.get(other_key, ()))
+        if len(joints) != NUM_JOINTS:
+            raise PlatformUnavailableError(
+                f"station observation has no {NUM_JOINTS}-joint state for the {self.arm} arm"
+            )
+        gripper = station.get(f"{self.arm}_gripper")
+        other_gripper = station.get(other_key.replace("joints", "gripper"))
+        return (
+            joints,
+            float(gripper) if gripper is not None else None,
+            other if len(other) == NUM_JOINTS else (),
+            float(other_gripper) if other_gripper is not None else None,
+        )
+
+    def _safety_gate(self) -> dict[str, Any]:
+        station = self._station()
+        safety = station.get("safety", {})
+        if safety.get("estop_engaged"):
+            raise PlatformUnavailableError("station e-stop is engaged; refusing to command")
+        if not safety.get("ok", False):
+            raise PlatformUnavailableError(
+                f"station safety not ok: {safety.get('reason', 'unknown')}"
+            )
+        if self.require_settled_first_command and not self._first_command_sent:
+            if not station.get("homed", False) or not station.get("settled", False):
+                raise PlatformUnavailableError(
+                    "station is not homed/settled; refusing the first motion command"
+                )
+        return station
+
+    # ------------------------------------------------------- transport API
+
     def health_check(self) -> Mapping[str, Any]:
-        self._fail("health_check")
+        robot_id = self.config.robot_id
+        if robot_id is None:
+            raise PlatformUnavailableError("platform config is missing robot_id")
+        robots = self.client.list_robots()
+        known = [item for item in robots if item.get("robot_id") == robot_id]
+        queue = self.client.get_queue(robot_id)
+        stations = queue.get("stations", [])
+        station = stations[0] if stations else {}
+        calibration = None
+        calibrations = [item for item in robots if item.get("calibration_url")]
+        healthy = {
+            "platform": "blupe",
+            "robot_registered": bool(known),
+            "station_connected": bool(station.get("connected", False)),
+            "station_available": bool(station.get("available", False)),
+            "queue_entries": len(queue.get("entries", [])),
+            "calibration_advertised": bool(calibrations),
+            "endpoint": self.config.endpoint_base,
+            "robot_id": robot_id,
+        }
+        if calibrations:
+            try:
+                calibration = self.calibration()
+                healthy["calibration_id"] = calibration.get("calibration_id")
+                healthy["top_camera_matrix_present"] = bool(
+                    calibration.get("cameras", {}).get("top", {}).get("K")
+                )
+            except BluPeAPIError as error:
+                healthy["calibration_error"] = str(error)
+        return healthy
+
+    def start_session(
+        self, *, timeout_s: float = 600.0, wait: bool = True
+    ) -> Mapping[str, Any]:
+        """Create a session and (optionally) wait until it gains control."""
+        if self.handle is not None:
+            return {"already_started": True, **self.handle.to_public_dict()}
+        robot_id = self.config.robot_id
+        if robot_id is None:
+            raise PlatformUnavailableError("platform config is missing robot_id")
+        self.handle = self.client.create_session(
+            robot_id,
+            self.prompt,
+            run_duration_s=self.run_duration_s,
+            model=self.session_model,
+        )
+        self._station()
+        if wait:
+            self.client.wait_for_running(self.handle, timeout_s=timeout_s)
+            self._station()
+        return dict(self.handle.to_public_dict())
+
+    def stop_session(self, reason: str = "policy_complete") -> Mapping[str, Any]:
+        if self.handle is None:
+            return {"stopped": False, "reason": "no_active_session"}
+        response = self.client.stop_session(self.handle, reason)
+        return {"stopped": True, "response": dict(response), **self.handle.to_public_dict()}
 
     def get_observation(self) -> PlatformObservation:
-        self._fail("get_observation")
+        station = self._station()
+        self._observation_counter += 1
+        observation_id = f"blupe_obs_{self._observation_counter:04d}"
+        image_paths: dict[str, str] = {}
+        try:
+            image_paths = self.client.download_observation_images(station, self.image_dir)
+        except BluPeAPIError as error:
+            raise PlatformUnavailableError(f"camera image download failed: {error}") from error
+        receipt = {
+            "transport": "blupe",
+            "robot_id": self.config.robot_id,
+            "observation_id": observation_id,
+            "station": {
+                "mode": station.get("mode"),
+                "homed": station.get("homed"),
+                "settled": station.get("settled"),
+                "queue_ready": station.get("queue_ready"),
+                "safety": dict(station.get("safety", {})),
+                "observed_at": station.get("observed_at"),
+            },
+            "joints_deg": {
+                "left": list(station.get("left_joints_deg", ())),
+                "right": list(station.get("right_joints_deg", ())),
+            },
+            "session": self.handle.to_public_dict() if self.handle else None,
+        }
+        return PlatformObservation(
+            observation_id=observation_id,
+            objects=(),
+            image_paths=tuple(sorted(image_paths.values())),
+            receipt=receipt,
+        )
+
+    # -------------------------------------------------------- command path
+
+    def _plan(self, command: PlatformCommand) -> MotionPlan:
+        joints, gripper, other_joints, other_gripper = self._current_arm_state()
+        parameters = dict(command.parameters)
+        approach = str(parameters.get("approach", "top"))
+        aperture = float(parameters.get("aperture_m", 0.07))
+        if command.command_type == "pick":
+            position_xyz = parameters.get("position_xyz_m")
+            if position_xyz is None:
+                raise PlatformUnavailableError(
+                    f"pick command {command.command_id} has no position_xyz_m"
+                )
+            position = self._camera_to_base(position_xyz)
+            return self.motion_planner.plan_pick(
+                arm=self.arm,
+                joints_deg_current=joints,
+                gripper_current=gripper,
+                target_xyz_m=position,
+                aperture_m=aperture,
+                approach=approach,
+                other_joints_deg=other_joints,
+                other_gripper=other_gripper,
+            )
+        if command.command_type == "place":
+            destination_xyz = parameters.get("destination_xyz_m")
+            destination_name = str(parameters.get("destination", ""))
+            if destination_xyz is None:
+                if destination_name not in self.destinations:
+                    raise PlatformUnavailableError(
+                        f"place destination '{destination_name}' has no coordinate table entry"
+                    )
+                destination_xyz = self.destinations[destination_name]
+            position = self._camera_to_base(destination_xyz)
+            return self.motion_planner.plan_place(
+                arm=self.arm,
+                joints_deg_current=joints,
+                gripper_current=gripper,
+                destination_xyz_m=position,
+                aperture_m=aperture,
+                approach=approach,
+                other_joints_deg=other_joints,
+                other_gripper=other_gripper,
+            )
+        if command.command_type == "home":
+            return self.motion_planner.plan_hold(
+                arm=self.arm,
+                joints_deg_current=joints,
+                gripper_current=gripper,
+                other_joints_deg=other_joints,
+                other_gripper=other_gripper,
+            )
+        raise PlatformUnavailableError(f"unsupported command type: {command.command_type}")
+
+    def _execute_plan(self, command: PlatformCommand, plan: MotionPlan) -> dict[str, Any]:
+        handle = self._require_handle()
+        steps = plan.interpolated_steps(
+            max_joint_delta_deg_per_step=self.motion_planner.max_joint_delta_deg_per_step
+        )
+        builder = TrajectoryBuilder(plan.arm, cadence_hz=plan.cadence_hz)
+        for index, (joints, gripper) in enumerate(steps):
+            builder.add(
+                step_id=self._step_id + index,
+                joints_deg=joints,
+                gripper=gripper,
+                other_joints_deg=plan.other_joints_deg,
+                other_gripper=plan.other_gripper,
+            )
+        self._trajectory_counter += 1
+        prefix = f"{command.command_id}_t{self._trajectory_counter:03d}"
+        packets = builder.packets(
+            episode_id=handle.episode_id or "", lease_id=handle.lease_id or "", prefix=prefix
+        )
+        packet_results: list[dict[str, Any]] = []
+        try:
+            for packet in packets:
+                ack = self.client.submit_trajectory_packet(handle, packet)
+                result = self.client.wait_for_trajectory(
+                    handle,
+                    str(packet["trajectory_id"]),
+                    timeout_s=max(60.0, len(packet["waypoints"]) / plan.cadence_hz * 3.0 + 30.0),
+                )
+                packet_results.append(
+                    {
+                        "trajectory_id": packet["trajectory_id"],
+                        "waypoints": len(packet["waypoints"]),
+                        "ack": dict(ack),
+                        "result": dict(result),
+                    }
+                )
+        except BluPeAPIError as error:
+            raise PlatformUnavailableError(f"trajectory execution failed: {error}") from error
+        finally:
+            self._step_id += len(steps)
+            self._waypoints_submitted += len(steps)
+            self._first_command_sent = True
+            self._station()
+        statuses = {str(item["result"].get("status")) for item in packet_results}
+        accepted = bool(packet_results) and statuses == {"completed"}
+        return {
+            "transport": "blupe",
+            "command_id": command.command_id,
+            "command_type": command.command_type,
+            "accepted": accepted,
+            "arm": plan.arm,
+            "keyframes": [
+                {"name": frame.name, "joints_deg": list(frame.joints_deg), "gripper": frame.gripper}
+                for frame in plan.keyframes
+            ],
+            "planner_notes": list(plan.notes),
+            "waypoints": len(steps),
+            "step_id_range": [builder.waypoints[0].step_id, builder.waypoints[-1].step_id],
+            "packets": packet_results,
+            "session_waypoints_used": self._waypoints_submitted,
+        }
 
     def send_command(self, command: PlatformCommand) -> Mapping[str, Any]:
-        self._fail("send_command")
+        self._safety_gate()
+        try:
+            plan = self._plan(command)
+        except MotionPlanError as error:
+            return {
+                "transport": "blupe",
+                "command_id": command.command_id,
+                "command_type": command.command_type,
+                "accepted": False,
+                "reason": "motion_plan_failed",
+                "detail": str(error),
+            }
+        return self._execute_plan(command, plan)
 
 
 class MockPlatformTransport:
