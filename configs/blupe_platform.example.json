@@ -1,13 +1,13 @@
 {
-  "schema_version": "agentic_rag_vlm.platform_config.blupe.example.v1",
+  "schema_version": "agentic_rag_vlm.platform_config.blupe.example.v2",
   "platform": "blupe",
   "auth_token_env": "BLUPE_API_TOKEN",
-  "endpoint_base": "https://api.blupe.io/v1",
-  "robot_id": "yam-01",
-  "camera_ids": ["front", "wrist_right"],
+  "endpoint_base": "https://yam-session-api.n5hthc3gj4cqy.us-east-1.cs.amazonlightsail.com",
+  "robot_id": "yam-1",
+  "camera_ids": ["top", "left", "right"],
   "request_timeout_s": 30.0,
   "max_retries": 2,
   "extra": {
-    "note": "endpoint_base is a placeholder until the BluPe API contract is received; see docs/BLUPE_DEPLOYMENT.md"
+    "note": "Session API v1 (checked 2026-10-25). The auth token env is optional: public monitoring and session creation need no BluPe credential; the session capability returned at creation authorizes session requests. See docs/BLUPE_DEPLOYMENT.md."
   }
 }
