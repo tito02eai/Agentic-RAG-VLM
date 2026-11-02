@@ -25,6 +25,7 @@ from agentic_rag_vlm.platform import (  # noqa: E402
     ObjectMetadata,
     PerceptionError,
     PlatformObservation,
+    PlatformUnavailableError,
     RegistryMetadataPerception,
     RemotePlatformTransport,
     SceneChangeVerifier,
@@ -76,17 +77,18 @@ def test_platform_config_loads_example_and_validates(tmp_path: Path) -> None:
     config = load_platform_config(PLATFORM_EXAMPLE)
     assert config.platform == "blupe"
     assert config.auth_token_env == "BLUPE_API_TOKEN"
-    assert config.camera_ids == ("front", "wrist_right")
+    assert config.camera_ids == ("top", "left", "right")
+    assert config.endpoint_base is not None and config.endpoint_base.startswith("https://")
     broken = tmp_path / "broken.json"
     broken.write_text(json.dumps({"platform": "blupe"}), encoding="utf-8")
     with pytest.raises(ValueError):
         load_platform_config(broken)
 
 
-def test_remote_transport_fails_fast_before_api_contract() -> None:
+def test_remote_transport_requires_session_before_commands() -> None:
     transport = RemotePlatformTransport(load_platform_config(PLATFORM_EXAMPLE))
-    with pytest.raises(Exception, match="BluPe API contract"):
-        transport.health_check()
+    with pytest.raises(PlatformUnavailableError, match="no active session"):
+        transport._require_handle()
 
 
 def test_mapper_translates_grasp_action_into_commands() -> None:
