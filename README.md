@@ -15,6 +15,11 @@ BluPe hardware task has been executed by this implementation.**
 [BluPe first-trial guide](docs/BLUPE_HARDWARE_TRIAL.md) ·
 [Local demos and verification](examples/blupe/README.md)
 
+This is the canonical repository for both the framework and its BluPe integration.
+Users of the former `agentic-rag-vlm-blupe` client can follow the
+[migration guide](docs/BLUPE_REPOSITORY_MIGRATION.md); Python imports remain
+`agentic_rag_vlm`.
+
 ## Framework
 
 - **HAA-RAG:** category matching and compatibility of affordance type, material,
