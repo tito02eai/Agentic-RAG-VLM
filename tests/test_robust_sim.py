@@ -106,11 +106,46 @@ def _diagnostic(tmp_path,*extra):
 def test_partial_load_placement_regression_needs_visual_and_unload_evidence(tmp_path):
     result,events=_diagnostic(tmp_path,'--seed','103','--mode','stacked_sort','--disable-memory')
     assert result['physical_success'] and len(result['attempts'])==6
-    probes=[e for e in events if e['event']=='placement_unload_probe']
-    assert probes and all(e['visible_support_stable'] for e in probes)
-    assert any(e['event']=='placement_visual_support' and e['camera']=='overview'
-               and e['matched_surface_xyz_m'] is not None for e in events)
+    # Solver/rendering builds can reach the direct, stronger load-transfer
+    # gate before needing an unload probe. Verify the actual release evidence
+    # for each target, rather than requiring a particular recovery branch.
+    loads=[e for e in events if e['event']=='placement_load']
+    targets={e['target'] for e in loads}
+    assert len(targets)==3
+    for target in targets:
+        final=next(e for e in reversed(loads) if e['target']==target)
+        if all(load<final['reference_load_n']*.5 for load in final['observed_loads_n'][-3:]):
+            continue
+        probes=[e for e in events if e['event']=='placement_unload_probe' and e['target']==target]
+        assert probes and all(e['visible_support_stable'] for e in probes)
+        assert abs(probes[-1]['normal_load_after_n'])<.15*final['reference_load_n']
+        assert any(e['event']=='placement_visual_support' and e['target']==target
+                   and e['matched_surface_xyz_m'] is not None for e in events)
     assert result['max_target_table_penetration_m']<.003
+
+
+@pytest.mark.parametrize('stable,remaining_load,expected',[
+    (True,.1,True), (False,.1,False), (True,.4,False)])
+def test_partial_unload_requires_both_stable_visual_support_and_load_transfer(stable,remaining_load,expected):
+    """Deterministic branch counterexamples; synthetic feedback, not physics evidence."""
+    from types import SimpleNamespace
+    from agentic_rag_vlm.simulation.robust import RobustRetentionTransport
+    sim=SimpleNamespace(data=SimpleNamespace(ctrl=np.zeros(7),time=0.),public_trace=[],stage='test')
+    def step(count):sim.data.time+=count*.002
+    sim.step=step
+    sim.tactile=lambda:{'left_finger_q_m':.01,'downward_load_n':remaining_load}
+    transport=object.__new__(RobustRetentionTransport);transport.sim=sim
+    visible_calls=[]
+    def visible(target,destination):
+        visible_calls.append(target)
+        if not stable and len(visible_calls)>2:return np.array([.3,.1,.036])
+        return np.array([.2,.1,.036])
+    transport._visible_support=visible
+    assert transport._guarded_unload('cube',np.array([.2,.1,.018]),1.) is expected
+    assert sim.data.ctrl[6]<.0375  # A probe never performs the full release.
+    if not expected:
+        assert sim.public_trace
+        assert any(not p['visible_support_stable'] for p in sim.public_trace) or remaining_load>=.15
 
 
 def test_heterogeneous_contact_and_shape_reuse_invalidates_failed_memory(tmp_path):

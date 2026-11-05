@@ -15,6 +15,8 @@ jobs:
     timeout-minutes: 15
     env:
       MUJOCO_GL: egl
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
       BLUPE_RUNNER_CHECKOUT: ${{ github.workspace }}/third_party/blupe-runner
     steps:
       - uses: actions/checkout@v4
@@ -39,4 +41,4 @@ jobs:
           python -m pip install -r configs/extended_sim_dependencies.txt
           python -m pip install -e '.[runner]'
       - name: Run local contracts and integration fixtures
-        run: python -m pytest -q tests
+        run: python -m pytest -q tests --durations=10
