@@ -57,6 +57,7 @@ class MotionPlan:
     other_gripper: float | None
     cadence_hz: float = 10.0
     notes: list[str] = field(default_factory=list)
+    velocity_scale: float = 1.0
 
     def interpolated_steps(
         self, *, max_joint_delta_deg_per_step: float
@@ -69,6 +70,9 @@ class MotionPlan:
         """
         if not self.keyframes:
             raise MotionPlanError("plan has no keyframes")
+        if not np.isfinite(self.velocity_scale) or not 0 < self.velocity_scale <= 1:
+            raise MotionPlanError("invalid velocity scale")
+        max_joint_delta_deg_per_step *= self.velocity_scale
         steps: list[tuple[tuple[float, ...], float | None]] = []
         previous = self.keyframes[0]
         steps.append((previous.joints_deg, previous.gripper))
@@ -81,17 +85,15 @@ class MotionPlan:
             )
             gripper_from = previous.gripper
             gripper_to = current.gripper
-            if current.hold_steps > 0:
-                # dwell first (e.g. while the gripper closes), then move on
-                for _ in range(current.hold_steps):
-                    steps.append((previous.joints_deg, gripper_to))
             for index in range(1, segments + 1):
                 fraction = index / segments
                 joints = np.asarray(previous.joints_deg) + fraction * delta
                 gripper = gripper_to
-                if gripper_from is not None and gripper_to is not None:
+                if gripper_from is not None and gripper_to is not None and index < segments:
                     gripper = gripper_from + fraction * (gripper_to - gripper_from)
                 steps.append((tuple(float(value) for value in joints), gripper))
+            for _ in range(current.hold_steps):
+                steps.append((current.joints_deg, current.gripper))
             previous = current
         return steps
 
@@ -109,6 +111,7 @@ class YamMotionPlanner:
     gripper_settle_s: float = 1.0
     cadence_hz: float = 10.0
     max_plan_waypoints: int = 1200  # keep headroom under the 3000 session cap
+    observation_park_xyz_m: Sequence[float] | None = None
 
     def __post_init__(self) -> None:
         self.hold_steps = max(1, round(self.gripper_settle_s * self.cadence_hz))
@@ -129,6 +132,19 @@ class YamMotionPlanner:
         result = self.kinematics.ik(
             position_m, rotation, q_init_rad=np.radians(np.asarray(joints_deg_current, dtype=float))
         )
+        if not result.success:
+            # The first seed can stop at a limit or singular configuration.
+            # Try a bounded set without relaxing the solver tolerances.
+            initial = np.radians(np.asarray(joints_deg_current, dtype=float))
+            limits = np.radians(self.kinematics.limits_deg)
+            middle = limits.mean(axis=1)
+            candidates = []
+            for seed in (middle, (middle + initial) / 2, np.zeros(NUM_JOINTS)):
+                candidate = self.kinematics.ik(position_m, rotation, q_init_rad=seed)
+                if candidate.success and candidate.within_limits:
+                    candidates.append(candidate)
+            if candidates:
+                result = min(candidates, key=lambda item: np.linalg.norm(item.joints_rad - initial))
         if not result.success:
             raise MotionPlanError(
                 f"{arm}-arm IK failed for approach '{approach}' at "
@@ -163,20 +179,30 @@ class YamMotionPlanner:
         target_xyz_m: Sequence[float],
         aperture_m: float,
         approach: str = "top",
+        approach_height_delta_m: float = 0.0,
+        approach_offset_xy_m: Sequence[float] = (0.0, 0.0),
+        velocity_scale: float = 1.0,
         other_joints_deg: Sequence[float] = (),
         other_gripper: float | None = None,
     ) -> MotionPlan:
         """Pre-grasp -> descend -> close -> lift around the target object."""
         notes: list[str] = []
+        if approach not in APPROACH_DIRECTIONS:
+            raise MotionPlanError(f"unsupported approach: {approach}")
+        if not np.isfinite(approach_height_delta_m) or not 0 <= approach_height_delta_m <= 0.15:
+            raise MotionPlanError("invalid approach height correction")
+        offset = np.asarray(approach_offset_xy_m, dtype=float)
+        if offset.shape != (2,) or not np.isfinite(offset).all() or np.linalg.norm(offset) > 0.15:
+            raise MotionPlanError("invalid approach offset")
         target = np.asarray(target_xyz_m, dtype=float)
         approach_dir = np.array(APPROACH_DIRECTIONS.get(approach, APPROACH_DIRECTIONS["top"]))
-        open_command = YamKinematics.gripper_command_for_aperture(aperture_m)
+        open_command = self.kinematics.gripper_command_for_aperture(aperture_m)
         current = tuple(float(value) for value in joints_deg_current)
 
         pregrasp = self._ik_frame(
             arm=arm,
             joints_deg_current=current,
-            position_m=target - approach_dir * self.approach_height_m,
+            position_m=target - approach_dir * (self.approach_height_m + approach_height_delta_m) + np.r_[offset, 0],
             approach=approach,
             notes=notes,
         )
@@ -209,6 +235,7 @@ class YamMotionPlanner:
             other_gripper=other_gripper,
             cadence_hz=self.cadence_hz,
             notes=notes,
+            velocity_scale=velocity_scale,
         )
         return self._check_budget(plan)
 
@@ -223,14 +250,16 @@ class YamMotionPlanner:
         destination_xyz_m: Sequence[float],
         aperture_m: float,
         approach: str = "top",
+        velocity_scale: float = 1.0,
         other_joints_deg: Sequence[float] = (),
         other_gripper: float | None = None,
+        hold_gripper_command: float | None = None,
     ) -> MotionPlan:
         """Above destination -> descend -> open -> retract."""
         notes: list[str] = []
         destination = np.asarray(destination_xyz_m, dtype=float)
         approach_dir = np.array(APPROACH_DIRECTIONS.get(approach, APPROACH_DIRECTIONS["top"]))
-        open_command = YamKinematics.gripper_command_for_aperture(aperture_m)
+        open_command = self.kinematics.gripper_command_for_aperture(aperture_m)
         current = tuple(float(value) for value in joints_deg_current)
 
         above = self._ik_frame(
@@ -254,7 +283,10 @@ class YamMotionPlanner:
             approach=approach,
             notes=notes,
         )
-        hold_gripper = gripper_current if gripper_current is not None else 0.02
+        # A measured aperture can be blocked by the held object. Commanding
+        # that aperture releases motor preload and can drop it during carry.
+        hold_gripper = hold_gripper_command if hold_gripper_command is not None else gripper_current if gripper_current is not None else 0.02
+        if not np.isfinite(hold_gripper) or not 0<=hold_gripper<=1:raise MotionPlanError('invalid gripper hold command')
         keyframes = [
             MotionKeyframe("start", current, hold_gripper),
             MotionKeyframe("above_destination", above, hold_gripper),
@@ -262,6 +294,11 @@ class YamMotionPlanner:
             MotionKeyframe("release", down, open_command, hold_steps=self.hold_steps),
             MotionKeyframe("retract", retract, open_command),
         ]
+        if self.observation_park_xyz_m is not None:
+            park=np.asarray(self.observation_park_xyz_m,dtype=float)
+            if park.shape!=(3,) or not np.isfinite(park).all():raise MotionPlanError('invalid observation park position')
+            parked=self._ik_frame(arm=arm,joints_deg_current=retract,position_m=park,approach=approach,notes=notes)
+            keyframes.append(MotionKeyframe('clear_observation',parked,open_command))
         plan = MotionPlan(
             arm=arm,
             keyframes=keyframes,
@@ -269,6 +306,7 @@ class YamMotionPlanner:
             other_gripper=other_gripper,
             cadence_hz=self.cadence_hz,
             notes=notes,
+            velocity_scale=velocity_scale,
         )
         return self._check_budget(plan)
 

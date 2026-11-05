@@ -1,0 +1,14 @@
+{
+  "schema_version":"agentic_rag_vlm.blupe_provider.v1",
+  "knowledge_store":"../knowledge_base/yam_verified_diverse_r8.json",
+  "registry":"../knowledge_base/blupe_semantic_registry.json",
+  "platform_config":"blupe_platform.example.json",
+  "deployment_profile":null,
+  "task":null,
+  "destinations":{},
+  "vlm_endpoint":"http://127.0.0.1:18074/v1/chat/completions",
+  "vlm_model":null,
+  "clip_endpoint":"http://127.0.0.1:18072",
+  "output":"../output/runner_runs",
+  "note":"Install/register/prepare need no physical robot or measured profile. Configure site geometry and named destinations before enabling execution in the runner. Knowledge supplies priors, not calibrated hardware force control."
+}

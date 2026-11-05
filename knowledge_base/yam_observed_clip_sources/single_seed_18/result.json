@@ -1,0 +1,764 @@
+{
+  "outcome": "complete",
+  "task_id": "yam_physics",
+  "summary": {
+    "phase": "complete",
+    "task_id": "yam_physics",
+    "completed_targets": [
+      "cube"
+    ],
+    "pending_targets": [],
+    "replan_count": 0,
+    "events": 6
+  },
+  "trace": [
+    {
+      "sequence": 0,
+      "event": "task_started",
+      "phase": "observe",
+      "payload": {
+        "task": {
+          "task_id": "yam_physics",
+          "instruction": "Place the cube in the blue marked zone",
+          "subgoals": [
+            {
+              "target": "cube",
+              "destination": "tray"
+            }
+          ],
+          "protected_objects": []
+        },
+        "pending_targets": [
+          "cube"
+        ]
+      }
+    },
+    {
+      "sequence": 1,
+      "event": "public_observation",
+      "phase": "observe",
+      "payload": {
+        "visible_objects": [
+          "cube"
+        ],
+        "missing_pending_targets": [],
+        "receipt": {
+          "perception_mode": "CandidateRGBDVLMPerception"
+        }
+      }
+    },
+    {
+      "sequence": 2,
+      "event": "subgoal_planned",
+      "phase": "plan",
+      "payload": {
+        "target": "cube",
+        "destination": "tray",
+        "action": {
+          "target": "cube",
+          "position_xyz_m": [
+            0.29724527856728516,
+            -0.11478005969645198,
+            0.0179222650527955
+          ],
+          "strategy": {
+            "synergy": "power",
+            "force_n": 18.0,
+            "aperture_m": 0.075,
+            "approach": "top",
+            "_semantic_signature": [
+              "cube",
+              "graspable_body",
+              "rigid",
+              0.1,
+              "body"
+            ],
+            "base_force_n": 18.0,
+            "approach_height_delta_m": 0.0,
+            "velocity_scale": 1.0
+          },
+          "constraint": {
+            "active": false,
+            "reason": "no_active_constraint",
+            "approach_offset_xy_m": [
+              0.0,
+              0.0
+            ],
+            "approach_height_delta_m": 0.0,
+            "force_scale": 1.0,
+            "constraints": [],
+            "prerequisites": [],
+            "blocked": false
+          },
+          "source": "haa_rag"
+        },
+        "evidence": {
+          "retrieval": {
+            "target": "cube",
+            "selected_card_id": "cube_power_top",
+            "strategy": {
+              "synergy": "power",
+              "force_n": 18.0,
+              "aperture_m": 0.075,
+              "approach": "top"
+            },
+            "ranked_cards": [
+              {
+                "card_id": "cube_power_top",
+                "category_score": 1.0,
+                "affordance_score": 1.0,
+                "visual_score": 0.7788007830714049,
+                "final_score": 0.9115203132285621,
+                "strategy": {
+                  "synergy": "power",
+                  "force_n": 18.0,
+                  "aperture_m": 0.075,
+                  "approach": "top"
+                }
+              }
+            ],
+            "retrieval_enabled": true
+          },
+          "scene_graph": {
+            "nodes": [
+              {
+                "name": "cube",
+                "center_xyz_m": [
+                  0.29724527856728516,
+                  -0.11478005969645198,
+                  0.0179222650527955
+                ],
+                "category": "cube",
+                "superclass": "rigid_body",
+                "affordance_type": "graspable_body",
+                "material": "rigid",
+                "fragility": 0.1,
+                "region": "body",
+                "visual_aspect": 1.0
+              }
+            ],
+            "edges": [],
+            "adjacency_threshold_m": 0.1
+          },
+          "constraint": {
+            "active": false,
+            "reason": "no_active_constraint",
+            "approach_offset_xy_m": [
+              0.0,
+              0.0
+            ],
+            "approach_height_delta_m": 0.0,
+            "force_scale": 1.0,
+            "constraints": [],
+            "prerequisites": [],
+            "blocked": false
+          }
+        },
+        "planner_receipt": {
+          "pipeline": "agentic_rag_vlm"
+        }
+      }
+    },
+    {
+      "sequence": 3,
+      "event": "skill_started",
+      "phase": "execute",
+      "payload": {
+        "target": "cube",
+        "skill": "power",
+        "receipt": {
+          "pick_command_id": "cmd_0001_pick"
+        }
+      }
+    },
+    {
+      "sequence": 4,
+      "event": "subgoal_verified",
+      "phase": "verify",
+      "payload": {
+        "target": "cube",
+        "success": true,
+        "quality": 1.0,
+        "evidence": {
+          "target": "cube",
+          "problems": [],
+          "moved_threshold_m": 0.05,
+          "protected_threshold_m": 0.015,
+          "protected_violations": [],
+          "unobserved_protected": [],
+          "invalid_positions": [],
+          "destination_xyz_m": [
+            0.26,
+            0.12,
+            0.018
+          ],
+          "destination_error_m": 0.0023711640619531876,
+          "destination_tolerance_m": 0.04,
+          "verification_scope": "destination_and_displacement",
+          "displacements": {
+            "cube": {
+              "delta_xy_m": [
+                -0.034893,
+                0.23507
+              ],
+              "distance_m": 0.2376451770815486
+            }
+          },
+          "sample_successes": [
+            true,
+            true
+          ],
+          "samples": [
+            {
+              "target": "cube",
+              "problems": [],
+              "moved_threshold_m": 0.05,
+              "protected_threshold_m": 0.015,
+              "protected_violations": [],
+              "unobserved_protected": [],
+              "invalid_positions": [],
+              "destination_xyz_m": [
+                0.26,
+                0.12,
+                0.018
+              ],
+              "destination_error_m": 0.0023711640619531876,
+              "destination_tolerance_m": 0.04,
+              "verification_scope": "destination_and_displacement",
+              "displacements": {
+                "cube": {
+                  "delta_xy_m": [
+                    -0.034893,
+                    0.23507
+                  ],
+                  "distance_m": 0.2376451770815486
+                }
+              }
+            },
+            {
+              "target": "cube",
+              "problems": [],
+              "moved_threshold_m": 0.05,
+              "protected_threshold_m": 0.015,
+              "protected_violations": [],
+              "unobserved_protected": [],
+              "invalid_positions": [],
+              "destination_xyz_m": [
+                0.26,
+                0.12,
+                0.018
+              ],
+              "destination_error_m": 0.0023711640619531876,
+              "destination_tolerance_m": 0.04,
+              "verification_scope": "destination_and_displacement",
+              "displacements": {
+                "cube": {
+                  "delta_xy_m": [
+                    -0.034893,
+                    0.23507
+                  ],
+                  "distance_m": 0.2376451770815486
+                }
+              }
+            }
+          ],
+          "stable": true,
+          "release_confirmed": true,
+          "place_command_id": "cmd_0002_place"
+        }
+      }
+    },
+    {
+      "sequence": 5,
+      "event": "task_completed",
+      "phase": "complete",
+      "payload": {
+        "completed_targets": [
+          "cube"
+        ]
+      }
+    }
+  ],
+  "receipts": [
+    {
+      "sequence": 0,
+      "phase": "observe",
+      "kind": "observation",
+      "payload": {
+        "observation_id": "physics_1",
+        "objects": [],
+        "image_paths": [
+          "/home/admin1/ct/Agentic-Policy/Agentic RAG-VLM/\u4eff\u771f\u5b9e\u9a8c/yam_20261102/qualification_holdout_v2/single_seed_18/observation_001/top.png"
+        ],
+        "receipt": {
+          "transport": "mujoco_contact_dynamics",
+          "time": 1.2000000000000008,
+          "captured_at": 1.2000000000000008,
+          "release_state": {
+            "gripper_open": true,
+            "retracted": false
+          },
+          "perception": "vlm_classification_color_rgbd_proposals",
+          "rgbd_candidates": [
+            {
+              "candidate_id": "candidate_0",
+              "top_xyz_m": [
+                0.29724527856728516,
+                -0.11478005969645198,
+                0.0359222650527955
+              ],
+              "bbox_xyxy": [
+                309,
+                293,
+                328,
+                312
+              ],
+              "crop_path": "/home/admin1/ct/Agentic-Policy/Agentic RAG-VLM/\u4eff\u771f\u5b9e\u9a8c/yam_20261102/qualification_holdout_v2/single_seed_18/observation_001/candidate_0.png"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "sequence": 1,
+      "phase": "observe",
+      "kind": "perception",
+      "payload": {
+        "mode": "vlm_classification_color_rgbd_proposals",
+        "object_count": 1,
+        "warnings": [
+          "default_visual_aspect:cube"
+        ],
+        "vlm_result": {
+          "parsed": {
+            "candidate_0": "cube"
+          },
+          "raw_text": "{\"candidate_0\":\"cube\"}\n",
+          "latency_ms": 374.8913719900884,
+          "requested_model": "/home/admin1/g2_multimodal_agent/models/Qwen3.5-4B",
+          "response_model": "/home/admin1/g2_multimodal_agent/models/Qwen3.5-4B@main",
+          "usage": {
+            "completion_tokens": 10,
+            "prompt_tokens": 152,
+            "total_tokens": 162
+          },
+          "parse_error": null,
+          "grounding": [
+            {
+              "candidate_id": "candidate_0",
+              "name": "cube",
+              "center_xyz_m": [
+                0.29724527856728516,
+                -0.11478005969645198,
+                0.0179222650527955
+              ],
+              "known_half_height_m": 0.018
+            }
+          ],
+          "scene_context": {}
+        }
+      }
+    },
+    {
+      "sequence": 2,
+      "phase": "execute",
+      "kind": "command",
+      "payload": {
+        "sent": {
+          "command_id": "cmd_0001_pick",
+          "command_type": "pick",
+          "target": "cube",
+          "origin": "haa_rag",
+          "parameters": {
+            "position_xyz_m": [
+              0.29724527856728516,
+              -0.11478005969645198,
+              0.0179222650527955
+            ],
+            "synergy": "power",
+            "force_n": 18.0,
+            "aperture_m": 0.075,
+            "approach": "top",
+            "velocity_scale": 1.0,
+            "approach_height_delta_m": 0.0,
+            "approach_offset_xy_m": [
+              0.0,
+              0.0
+            ]
+          },
+          "constraint": {
+            "active": false,
+            "reason": "no_active_constraint",
+            "approach_offset_xy_m": [
+              0.0,
+              0.0
+            ],
+            "approach_height_delta_m": 0.0,
+            "force_scale": 1.0,
+            "constraints": [],
+            "prerequisites": [],
+            "blocked": false
+          }
+        },
+        "receipt": {
+          "accepted": true,
+          "command_id": "cmd_0001_pick",
+          "execution": "actuators_and_mj_step"
+        }
+      }
+    },
+    {
+      "sequence": 3,
+      "phase": "verify",
+      "kind": "command",
+      "payload": {
+        "sent": {
+          "command_id": "cmd_0002_place",
+          "command_type": "place",
+          "target": "cube",
+          "origin": "haa_rag",
+          "parameters": {
+            "destination": "tray",
+            "aperture_m": 0.075,
+            "approach": "top",
+            "velocity_scale": 1.0,
+            "destination_xyz_m": [
+              0.26,
+              0.12,
+              0.018
+            ]
+          },
+          "constraint": {
+            "active": false,
+            "reason": "no_active_constraint",
+            "approach_offset_xy_m": [
+              0.0,
+              0.0
+            ],
+            "approach_height_delta_m": 0.0,
+            "force_scale": 1.0,
+            "constraints": [],
+            "prerequisites": [],
+            "blocked": false
+          }
+        },
+        "receipt": {
+          "accepted": true,
+          "command_id": "cmd_0002_place",
+          "execution": "actuators_and_mj_step"
+        }
+      }
+    },
+    {
+      "sequence": 4,
+      "phase": "verify",
+      "kind": "observation",
+      "payload": {
+        "observation_id": "physics_2",
+        "objects": [],
+        "image_paths": [
+          "/home/admin1/ct/Agentic-Policy/Agentic RAG-VLM/\u4eff\u771f\u5b9e\u9a8c/yam_20261102/qualification_holdout_v2/single_seed_18/observation_002/top.png"
+        ],
+        "receipt": {
+          "transport": "mujoco_contact_dynamics",
+          "time": 20.199999999999683,
+          "captured_at": 20.199999999999683,
+          "release_state": {
+            "gripper_open": true,
+            "retracted": true
+          },
+          "perception": "vlm_classification_color_rgbd_proposals",
+          "rgbd_candidates": [
+            {
+              "candidate_id": "candidate_0",
+              "top_xyz_m": [
+                0.26235214041956373,
+                0.12028950256188169,
+                0.0359222650527955
+              ],
+              "bbox_xyxy": [
+                289,
+                165,
+                309,
+                185
+              ],
+              "crop_path": "/home/admin1/ct/Agentic-Policy/Agentic RAG-VLM/\u4eff\u771f\u5b9e\u9a8c/yam_20261102/qualification_holdout_v2/single_seed_18/observation_002/candidate_0.png"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "sequence": 5,
+      "phase": "verify",
+      "kind": "perception",
+      "payload": {
+        "mode": "vlm_classification_color_rgbd_proposals",
+        "object_count": 1,
+        "warnings": [
+          "default_visual_aspect:cube"
+        ],
+        "vlm_result": {
+          "parsed": {
+            "candidate_0": "cube"
+          },
+          "raw_text": "{\"candidate_0\":\"cube\"}\n",
+          "latency_ms": 375.0498910085298,
+          "requested_model": "/home/admin1/g2_multimodal_agent/models/Qwen3.5-4B",
+          "response_model": "/home/admin1/g2_multimodal_agent/models/Qwen3.5-4B@main",
+          "usage": {
+            "completion_tokens": 10,
+            "prompt_tokens": 152,
+            "total_tokens": 162
+          },
+          "parse_error": null,
+          "grounding": [
+            {
+              "candidate_id": "candidate_0",
+              "name": "cube",
+              "center_xyz_m": [
+                0.26235214041956373,
+                0.12028950256188169,
+                0.0179222650527955
+              ],
+              "known_half_height_m": 0.018
+            }
+          ],
+          "scene_context": {}
+        }
+      }
+    },
+    {
+      "sequence": 6,
+      "phase": "verify",
+      "kind": "observation",
+      "payload": {
+        "observation_id": "physics_3",
+        "objects": [],
+        "image_paths": [
+          "/home/admin1/ct/Agentic-Policy/Agentic RAG-VLM/\u4eff\u771f\u5b9e\u9a8c/yam_20261102/qualification_holdout_v2/single_seed_18/observation_003/top.png"
+        ],
+        "receipt": {
+          "transport": "mujoco_contact_dynamics",
+          "time": 20.399999999999572,
+          "captured_at": 20.399999999999572,
+          "release_state": {
+            "gripper_open": true,
+            "retracted": true
+          },
+          "perception": "vlm_classification_color_rgbd_proposals",
+          "rgbd_candidates": [
+            {
+              "candidate_id": "candidate_0",
+              "top_xyz_m": [
+                0.26235214041956373,
+                0.12028950256188169,
+                0.0359222650527955
+              ],
+              "bbox_xyxy": [
+                289,
+                165,
+                309,
+                185
+              ],
+              "crop_path": "/home/admin1/ct/Agentic-Policy/Agentic RAG-VLM/\u4eff\u771f\u5b9e\u9a8c/yam_20261102/qualification_holdout_v2/single_seed_18/observation_003/candidate_0.png"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "sequence": 7,
+      "phase": "verify",
+      "kind": "perception",
+      "payload": {
+        "mode": "vlm_classification_color_rgbd_proposals",
+        "object_count": 1,
+        "warnings": [
+          "default_visual_aspect:cube"
+        ],
+        "vlm_result": {
+          "parsed": {
+            "candidate_0": "cube"
+          },
+          "raw_text": "{\"candidate_0\":\"cube\"}\n",
+          "latency_ms": 376.3081399956718,
+          "requested_model": "/home/admin1/g2_multimodal_agent/models/Qwen3.5-4B",
+          "response_model": "/home/admin1/g2_multimodal_agent/models/Qwen3.5-4B@main",
+          "usage": {
+            "completion_tokens": 10,
+            "prompt_tokens": 152,
+            "total_tokens": 162
+          },
+          "parse_error": null,
+          "grounding": [
+            {
+              "candidate_id": "candidate_0",
+              "name": "cube",
+              "center_xyz_m": [
+                0.26235214041956373,
+                0.12028950256188169,
+                0.0179222650527955
+              ],
+              "known_half_height_m": 0.018
+            }
+          ],
+          "scene_context": {}
+        }
+      }
+    },
+    {
+      "sequence": 8,
+      "phase": "verify",
+      "kind": "verification",
+      "payload": {
+        "result": {
+          "target": "cube",
+          "problems": [],
+          "moved_threshold_m": 0.05,
+          "protected_threshold_m": 0.015,
+          "protected_violations": [],
+          "unobserved_protected": [],
+          "invalid_positions": [],
+          "destination_xyz_m": [
+            0.26,
+            0.12,
+            0.018
+          ],
+          "destination_error_m": 0.0023711640619531876,
+          "destination_tolerance_m": 0.04,
+          "verification_scope": "destination_and_displacement",
+          "displacements": {
+            "cube": {
+              "delta_xy_m": [
+                -0.034893,
+                0.23507
+              ],
+              "distance_m": 0.2376451770815486
+            }
+          },
+          "sample_successes": [
+            true,
+            true
+          ],
+          "samples": [
+            {
+              "target": "cube",
+              "problems": [],
+              "moved_threshold_m": 0.05,
+              "protected_threshold_m": 0.015,
+              "protected_violations": [],
+              "unobserved_protected": [],
+              "invalid_positions": [],
+              "destination_xyz_m": [
+                0.26,
+                0.12,
+                0.018
+              ],
+              "destination_error_m": 0.0023711640619531876,
+              "destination_tolerance_m": 0.04,
+              "verification_scope": "destination_and_displacement",
+              "displacements": {
+                "cube": {
+                  "delta_xy_m": [
+                    -0.034893,
+                    0.23507
+                  ],
+                  "distance_m": 0.2376451770815486
+                }
+              }
+            },
+            {
+              "target": "cube",
+              "problems": [],
+              "moved_threshold_m": 0.05,
+              "protected_threshold_m": 0.015,
+              "protected_violations": [],
+              "unobserved_protected": [],
+              "invalid_positions": [],
+              "destination_xyz_m": [
+                0.26,
+                0.12,
+                0.018
+              ],
+              "destination_error_m": 0.0023711640619531876,
+              "destination_tolerance_m": 0.04,
+              "verification_scope": "destination_and_displacement",
+              "displacements": {
+                "cube": {
+                  "delta_xy_m": [
+                    -0.034893,
+                    0.23507
+                  ],
+                  "distance_m": 0.2376451770815486
+                }
+              }
+            }
+          ],
+          "stable": true,
+          "release_confirmed": true
+        },
+        "success": true
+      }
+    }
+  ],
+  "physical_success": true,
+  "evidence_kind": "mujoco_contact_dynamics",
+  "controller_perception": "vlm_classification_color_rgbd_proposals",
+  "uses_vlm": true,
+  "seed": 18,
+  "neighbor": false,
+  "qualification_checks": {
+    "framework_complete": true,
+    "destination": true,
+    "bilateral_lift": true,
+    "table_support": true,
+    "released": true,
+    "protected_displacement": true,
+    "arm_table_contact": true,
+    "protected_contact": true,
+    "self_contact": true,
+    "target_penetration": true
+  },
+  "qualification_criteria": {
+    "destination_error_m_lt": 0.04,
+    "bilateral_contact_above_0_10m_seconds_gt": 0.5,
+    "max_protected_displacement_m_lt": 0.015,
+    "max_target_robot_penetration_m_lt": 0.003,
+    "protected_robot_contacts": 0,
+    "self_penetration_beyond_1mm_contacts": 0,
+    "arm_table_penetration_beyond_1mm_contacts": 0,
+    "target_supported_after_release": true,
+    "finger_contact_at_end": false,
+    "framework_outcome": "complete"
+  },
+  "simulator": {
+    "engine": "MuJoCo",
+    "version": "3.2.2",
+    "timestep_s": 0.002,
+    "elapsed_simulation_s": 20.399999999999572
+  },
+  "vlm_calls": 3,
+  "private_evaluator": {
+    "final_target_xyz": [
+      0.26165640794066886,
+      0.12003215444082602,
+      0.017918190501988226
+    ],
+    "destination_error_m": 0.0016587386677655355,
+    "max_target_height_m": 0.1345960714917487,
+    "protected_displacement_m": 0,
+    "max_protected_displacement_m": 0.0,
+    "bilateral_contact_above_0_10m_seconds": 3.763999999999807,
+    "max_target_robot_penetration_m": 0.001184528357319926,
+    "protected_robot_contacts": 0,
+    "self_penetration_contacts": 0,
+    "target_supported": true,
+    "finger_contact_at_end": false,
+    "forbidden_arm_table_contacts": 0
+  },
+  "robot_variant": "mjlab YAM; not a calibrated BluPe twin",
+  "object_attachment_used": false,
+  "object_pose_reset_after_initialization": false,
+  "ideal_robot_gravity_compensation": true
+}

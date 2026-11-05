@@ -57,6 +57,13 @@ def _plan_place(planner: YamMotionPlanner):
     )
 
 
+def test_place_keeps_close_command_when_measured_fingers_are_blocked(planner):
+    plan=planner.plan_place(arm='right',joints_deg_current=HOME_JOINTS,
+        gripper_current=.48,hold_gripper_command=.02,destination_xyz_m=PLACE_DEST_M,aperture_m=APERTURE_M)
+    assert all(frame.gripper==.02 for frame in plan.keyframes[:3])
+    assert plan.keyframes[3].name=='release' and plan.keyframes[3].gripper==pytest.approx(OPEN_COMMAND)
+
+
 def test_plan_pick_keyframe_structure(planner: YamMotionPlanner) -> None:
     plan = _plan_pick(planner)
     assert [frame.name for frame in plan.keyframes] == [
@@ -192,3 +199,21 @@ def test_plan_budget_is_enforced() -> None:
             target_xyz_m=PICK_TARGET_M,
             aperture_m=APERTURE_M,
         )
+
+
+def test_approach_bias_does_not_shift_contact_point(planner: YamMotionPlanner) -> None:
+    plan = planner.plan_pick(arm="right", joints_deg_current=HOME_JOINTS, gripper_current=.5,
+        target_xyz_m=PICK_TARGET_M, aperture_m=.07, approach_height_delta_m=.03,
+        approach_offset_xy_m=(.01, 0))
+    frames = {frame.name: frame for frame in plan.keyframes}
+    pre = planner.kinematics.fk(np.radians(frames["approach_open"].joints_deg))[:3, 3]
+    grasp = planner.kinematics.fk(np.radians(frames["descend"].joints_deg))[:3, 3]
+    assert np.allclose(pre, np.array(PICK_TARGET_M) + [.01, 0, .13], atol=.002)
+    assert np.allclose(grasp, np.array(PICK_TARGET_M) + [0, 0, .02], atol=.002)
+
+
+def test_content_velocity_scale_reaches_waypoint_spacing(planner: YamMotionPlanner) -> None:
+    slow = planner.plan_pick(arm="right", joints_deg_current=HOME_JOINTS, gripper_current=.5,
+        target_xyz_m=PICK_TARGET_M, aperture_m=.07, velocity_scale=.5)
+    steps = slow.interpolated_steps(max_joint_delta_deg_per_step=3)
+    assert all(np.max(np.abs(np.asarray(b[0]) - a[0])) <= 1.5 + 1e-8 for a, b in zip(steps, steps[1:]))

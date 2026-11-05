@@ -1,0 +1,14 @@
+{
+  "purpose": "Development-only physical endpoint checks; excluded from all held-out results",
+  "study": "stratified_pilot",
+  "knowledge_store": "knowledge_base/yam_verified_diverse_r8.json",
+  "seeds": [890, 891],
+  "iteration_order": "paired_seed",
+  "model_health_required": true,
+  "record_seeds": [890],
+  "upper_half_width_by_seed": {"890": 0.017, "891": 0.012},
+  "conditions": [
+    {"name": "mixed_enhanced", "mode": "stacked_sort", "friction": 0.7, "memory": true, "recovery": true, "scene_graph": true, "controller_profile": "guarded", "recovery_policy": "force_ladder", "scene_variation": "mixed_contact", "mixed_shapes": true, "grounding_repair": true, "multiccd": true, "visibility_replanning": true, "retrieval_profile": "haa", "planning_policy": "agentic"},
+    {"name": "mixed_geometric", "mode": "stacked_sort", "friction": 0.7, "memory": false, "recovery": true, "scene_graph": false, "controller_profile": "guarded", "recovery_policy": "force_ladder", "scene_variation": "mixed_contact", "mixed_shapes": true, "grounding_repair": true, "multiccd": true, "visibility_replanning": false, "retrieval_profile": "fixed", "planning_policy": "geometric"}
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "purpose": "paired within-session memory mechanism integration, not original paper trial reproduction",
+  "seeds": [40, 41, 42, 43, 44],
+  "scenarios": [
+    {"name": "memory_on", "neighbor": true, "multiple": true, "disable_memory": false},
+    {"name": "memory_off", "neighbor": true, "multiple": true, "disable_memory": true}
+  ],
+  "position_randomization_m": {"x": [0.288, 0.312], "y": [-0.132, -0.108]},
+  "criteria": {
+    "destination_error_m_lt": 0.04,
+    "bilateral_contact_above_0_10m_seconds_gt": 0.5,
+    "max_protected_displacement_m_lt": 0.015,
+    "max_target_robot_penetration_m_lt": 0.003,
+    "protected_robot_contacts": 0,
+    "self_penetration_beyond_1mm_contacts": 0,
+    "arm_table_penetration_beyond_1mm_contacts": 0,
+    "target_supported_after_release": true,
+    "finger_contact_at_end": false,
+    "framework_outcome": "complete"
+  }
+}

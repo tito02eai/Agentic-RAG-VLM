@@ -1,0 +1,1037 @@
+{
+  "outcome": "complete",
+  "task_id": "extended_2",
+  "summary": {
+    "phase": "complete",
+    "task_id": "extended_2",
+    "completed_targets": [
+      "cube"
+    ],
+    "pending_targets": [],
+    "replan_count": 0,
+    "events": 6
+  },
+  "trace": [
+    {
+      "sequence": 0,
+      "event": "task_started",
+      "phase": "observe",
+      "payload": {
+        "task": {
+          "task_id": "extended_2",
+          "instruction": "Sort all three blocks individually; remove anything resting on a block before its base; protect the green vessel.",
+          "subgoals": [
+            {
+              "target": "cube",
+              "destination": "zone_cube"
+            }
+          ],
+          "protected_objects": []
+        },
+        "pending_targets": [
+          "cube"
+        ]
+      }
+    },
+    {
+      "sequence": 1,
+      "event": "public_observation",
+      "phase": "observe",
+      "payload": {
+        "visible_objects": [
+          "cube"
+        ],
+        "missing_pending_targets": [],
+        "receipt": {
+          "perception_mode": "SupportRGBDPerception"
+        }
+      }
+    },
+    {
+      "sequence": 2,
+      "event": "subgoal_planned",
+      "phase": "plan",
+      "payload": {
+        "target": "cube",
+        "destination": "zone_cube",
+        "action": {
+          "target": "cube",
+          "position_xyz_m": [
+            0.29816344888679996,
+            -0.12121237347120212,
+            0.017881614685058684
+          ],
+          "strategy": {
+            "synergy": "power",
+            "force_n": 0.8,
+            "aperture_m": 0.075,
+            "approach": "top",
+            "_semantic_signature": [
+              "cube",
+              "graspable_body",
+              "rigid",
+              0.1,
+              "body"
+            ],
+            "_execution_domain": "legacy",
+            "base_force_n": 0.8,
+            "approach_height_delta_m": 0.0,
+            "velocity_scale": 1.0
+          },
+          "constraint": {
+            "active": false,
+            "reason": "no_active_constraint",
+            "approach_offset_xy_m": [
+              0.0,
+              0.0
+            ],
+            "approach_height_delta_m": 0.0,
+            "force_scale": 1.0,
+            "constraints": [],
+            "prerequisites": [],
+            "blocked": false
+          },
+          "source": "haa_rag"
+        },
+        "evidence": {
+          "retrieval": {
+            "target": "cube",
+            "selected_card_id": "cube_power_top",
+            "strategy": {
+              "synergy": "power",
+              "force_n": 0.8,
+              "aperture_m": 0.075,
+              "approach": "top"
+            },
+            "ranked_cards": [
+              {
+                "card_id": "cube_power_top",
+                "category_score": 1.0,
+                "affordance_score": 1.0,
+                "visual_score": 0.7788007830714049,
+                "final_score": 0.9115203132285621,
+                "strategy": {
+                  "synergy": "power",
+                  "force_n": 0.8,
+                  "aperture_m": 0.075,
+                  "approach": "top"
+                }
+              }
+            ],
+            "retrieval_enabled": true
+          },
+          "scene_graph": {
+            "nodes": [
+              {
+                "name": "cube",
+                "center_xyz_m": [
+                  0.29816344888679996,
+                  -0.12121237347120212,
+                  0.017881614685058684
+                ],
+                "category": "cube",
+                "superclass": "rigid_body",
+                "affordance_type": "graspable_body",
+                "material": "rigid",
+                "fragility": 0.1,
+                "region": "body",
+                "visual_aspect": 1.0,
+                "state": "unknown"
+              }
+            ],
+            "edges": [],
+            "adjacency_threshold_m": 0.1,
+            "analysis_radius_m": 0.15
+          },
+          "constraint": {
+            "active": false,
+            "reason": "no_active_constraint",
+            "approach_offset_xy_m": [
+              0.0,
+              0.0
+            ],
+            "approach_height_delta_m": 0.0,
+            "force_scale": 1.0,
+            "constraints": [],
+            "prerequisites": [],
+            "blocked": false
+          },
+          "memory": {
+            "enabled": true,
+            "hit": false,
+            "source_episode": null,
+            "rejected_reason": null
+          }
+        },
+        "planner_receipt": {
+          "pipeline": "agentic_rag_vlm"
+        },
+        "vlm_thought": null
+      }
+    },
+    {
+      "sequence": 3,
+      "event": "skill_started",
+      "phase": "execute",
+      "payload": {
+        "target": "cube",
+        "skill": "power",
+        "receipt": {
+          "pick_command_id": "cmd_0001_pick"
+        }
+      }
+    },
+    {
+      "sequence": 4,
+      "event": "subgoal_verified",
+      "phase": "verify",
+      "payload": {
+        "target": "cube",
+        "success": true,
+        "quality": 1.0,
+        "evidence": {
+          "target": "cube",
+          "problems": [],
+          "moved_threshold_m": 0.05,
+          "protected_threshold_m": 0.015,
+          "protected_violations": [],
+          "unobserved_protected": [],
+          "invalid_positions": [],
+          "destination_xyz_m": [
+            0.26,
+            0.12,
+            0.018
+          ],
+          "destination_error_m": 0.0008172907257749314,
+          "destination_tolerance_m": 0.025,
+          "verification_scope": "destination_and_displacement",
+          "displacements": {
+            "cube": {
+              "delta_xy_m": [
+                -0.037649,
+                0.240588
+              ],
+              "distance_m": 0.24351622040171325
+            }
+          },
+          "sample_successes": [
+            true,
+            true
+          ],
+          "samples": [
+            {
+              "target": "cube",
+              "problems": [],
+              "moved_threshold_m": 0.05,
+              "protected_threshold_m": 0.015,
+              "protected_violations": [],
+              "unobserved_protected": [],
+              "invalid_positions": [],
+              "destination_xyz_m": [
+                0.26,
+                0.12,
+                0.018
+              ],
+              "destination_error_m": 0.0008172907257749314,
+              "destination_tolerance_m": 0.025,
+              "verification_scope": "destination_and_displacement",
+              "displacements": {
+                "cube": {
+                  "delta_xy_m": [
+                    -0.037649,
+                    0.240588
+                  ],
+                  "distance_m": 0.24351622040171325
+                }
+              }
+            },
+            {
+              "target": "cube",
+              "problems": [],
+              "moved_threshold_m": 0.05,
+              "protected_threshold_m": 0.015,
+              "protected_violations": [],
+              "unobserved_protected": [],
+              "invalid_positions": [],
+              "destination_xyz_m": [
+                0.26,
+                0.12,
+                0.018
+              ],
+              "destination_error_m": 0.0008172907257749314,
+              "destination_tolerance_m": 0.025,
+              "verification_scope": "destination_and_displacement",
+              "displacements": {
+                "cube": {
+                  "delta_xy_m": [
+                    -0.037649,
+                    0.240588
+                  ],
+                  "distance_m": 0.24351622040171325
+                }
+              }
+            }
+          ],
+          "stable": true,
+          "release_confirmed": true,
+          "place_command_id": "cmd_0002_place"
+        }
+      }
+    },
+    {
+      "sequence": 5,
+      "event": "task_completed",
+      "phase": "complete",
+      "payload": {
+        "completed_targets": [
+          "cube"
+        ]
+      }
+    }
+  ],
+  "receipts": [
+    {
+      "sequence": 0,
+      "phase": "observe",
+      "kind": "observation",
+      "payload": {
+        "observation_id": "physics_1",
+        "objects": [],
+        "image_paths": [
+          "/home/admin1/ct/Agentic-Policy/Agentic RAG-VLM/\u4eff\u771f\u5b9e\u9a8c/extended_20261102/calibration_v3/single_seed_02/observation_001/top.png"
+        ],
+        "receipt": {
+          "transport": "mujoco_contact_dynamics",
+          "time": 2.899999999999902,
+          "captured_at": 2.899999999999902,
+          "release_state": {
+            "gripper_open": true,
+            "retracted": false
+          },
+          "perception": "vlm_classification_color_rgbd_proposals",
+          "rgbd_candidates": [
+            {
+              "candidate_id": "candidate_0",
+              "top_xyz_m": [
+                0.29816344888679996,
+                -0.12121237347120212,
+                0.03588161468505868
+              ],
+              "bbox_xyxy": [
+                309,
+                296,
+                329,
+                316
+              ],
+              "crop_path": "/home/admin1/ct/Agentic-Policy/Agentic RAG-VLM/\u4eff\u771f\u5b9e\u9a8c/extended_20261102/calibration_v3/single_seed_02/observation_001/candidate_0.png"
+            }
+          ],
+          "candidate_preprocessing": "visible color-proposal mask with neutral background; no semantic identity supplied"
+        }
+      }
+    },
+    {
+      "sequence": 1,
+      "phase": "observe",
+      "kind": "perception",
+      "payload": {
+        "mode": "vlm_classification_color_rgbd_proposals",
+        "object_count": 1,
+        "warnings": [
+          "default_visual_aspect:cube"
+        ],
+        "vlm_result": {
+          "parsed": {
+            "candidate_0": "cube"
+          },
+          "raw_text": "{\"candidate_0\":\"cube\"}\n",
+          "latency_ms": 331.2062310287729,
+          "requested_model": "/home/admin1/g2_multimodal_agent/models/Qwen3.5-4B",
+          "response_model": "/home/admin1/g2_multimodal_agent/models/Qwen3.5-4B@main",
+          "usage": {
+            "completion_tokens": 10,
+            "prompt_tokens": 175,
+            "total_tokens": 185
+          },
+          "parse_error": null,
+          "grounding": [
+            {
+              "candidate_id": "candidate_0",
+              "name": "cube",
+              "center_xyz_m": [
+                0.29816344888679996,
+                -0.12121237347120212,
+                0.017881614685058684
+              ],
+              "known_half_height_m": 0.018
+            }
+          ],
+          "scene_context": {
+            "states": {},
+            "relations": []
+          },
+          "visual_embeddings": {},
+          "embedding_space": null,
+          "relation_source": "observed_rgbd_plus_known_dimensions; not simulator body poses"
+        }
+      }
+    },
+    {
+      "sequence": 2,
+      "phase": "execute",
+      "kind": "command",
+      "payload": {
+        "sent": {
+          "command_id": "cmd_0001_pick",
+          "command_type": "pick",
+          "target": "cube",
+          "origin": "haa_rag",
+          "parameters": {
+            "position_xyz_m": [
+              0.29816344888679996,
+              -0.12121237347120212,
+              0.017881614685058684
+            ],
+            "synergy": "power",
+            "force_n": 0.8,
+            "aperture_m": 0.075,
+            "approach": "top",
+            "velocity_scale": 1.0,
+            "approach_height_delta_m": 0.0,
+            "approach_offset_xy_m": [
+              0.0,
+              0.0
+            ],
+            "approach_yaw_delta_rad": 0.0,
+            "wrist_yaw_delta_rad": 0.0
+          },
+          "constraint": {
+            "active": false,
+            "reason": "no_active_constraint",
+            "approach_offset_xy_m": [
+              0.0,
+              0.0
+            ],
+            "approach_height_delta_m": 0.0,
+            "force_scale": 1.0,
+            "constraints": [],
+            "prerequisites": [],
+            "blocked": false
+          }
+        },
+        "receipt": {
+          "accepted": true,
+          "execution_started": true,
+          "command_id": "cmd_0001_pick",
+          "retention": {
+            "target": "cube",
+            "command_id": "cmd_0001_pick",
+            "motor_force_cap_n": 0.8,
+            "initial_tactile": {
+              "normal_force_n": {
+                "left": 0.38125914812686235,
+                "right": 0.41847140091630675
+              },
+              "bilateral": true,
+              "left_finger_q_m": 0.01807029135300893,
+              "downward_load_n": -0.010846630443408802
+            },
+            "retention_samples": [
+              {
+                "time": 10.240000000000089,
+                "normal_force_n": {
+                  "left": 0.3997698218784477,
+                  "right": 0.40017094296469635
+                },
+                "bilateral": true,
+                "left_finger_q_m": 0.018074589452796216,
+                "downward_load_n": 0.5877988940849924
+              },
+              {
+                "time": 10.280000000000102,
+                "normal_force_n": {
+                  "left": 0.39974489094123455,
+                  "right": 0.40019762387493946
+                },
+                "bilateral": true,
+                "left_finger_q_m": 0.018075071697571478,
+                "downward_load_n": 0.588092803258561
+              },
+              {
+                "time": 10.320000000000116,
+                "normal_force_n": {
+                  "left": 0.39972585618815887,
+                  "right": 0.40021722861697256
+                },
+                "bilateral": true,
+                "left_finger_q_m": 0.018075403313693374,
+                "downward_load_n": 0.5882778608009811
+              },
+              {
+                "time": 10.360000000000129,
+                "normal_force_n": {
+                  "left": 0.39971198649085465,
+                  "right": 0.40023173500110376
+                },
+                "bilateral": true,
+                "left_finger_q_m": 0.018075630709342982,
+                "downward_load_n": 0.5883947199095129
+              },
+              {
+                "time": 10.400000000000142,
+                "normal_force_n": {
+                  "left": 0.3997019034865088,
+                  "right": 0.40024227794903944
+                },
+                "bilateral": true,
+                "left_finger_q_m": 0.018075786483277338,
+                "downward_load_n": 0.5884687445610973
+              },
+              {
+                "time": 10.440000000000156,
+                "normal_force_n": {
+                  "left": 0.3996946370000808,
+                  "right": 0.4002498658887989
+                },
+                "bilateral": true,
+                "left_finger_q_m": 0.018075893149744834,
+                "downward_load_n": 0.5885157882622309
+              },
+              {
+                "time": 10.48000000000017,
+                "normal_force_n": {
+                  "left": 0.39968944246406607,
+                  "right": 0.4002552861977662
+                },
+                "bilateral": true,
+                "left_finger_q_m": 0.018075966159958736,
+                "downward_load_n": 0.5885457849853439
+              },
+              {
+                "time": 10.520000000000183,
+                "normal_force_n": {
+                  "left": 0.3996857555828872,
+                  "right": 0.4002591334807534
+                },
+                "bilateral": true,
+                "left_finger_q_m": 0.018076016107495874,
+                "downward_load_n": 0.5885649768883449
+              },
+              {
+                "time": 10.560000000000196,
+                "normal_force_n": {
+                  "left": 0.3996831560922496,
+                  "right": 0.4002618487315383
+                },
+                "bilateral": true,
+                "left_finger_q_m": 0.018076050253514445,
+                "downward_load_n": 0.5885772979713569
+              },
+              {
+                "time": 10.60000000000021,
+                "normal_force_n": {
+                  "left": 0.3996813353042835,
+                  "right": 0.40026375478130327
+                },
+                "bilateral": true,
+                "left_finger_q_m": 0.018076073574160197,
+                "downward_load_n": 0.5885852352414301
+              }
+            ],
+            "retained": true,
+            "source": "haa_rag"
+          }
+        }
+      }
+    },
+    {
+      "sequence": 3,
+      "phase": "verify",
+      "kind": "command",
+      "payload": {
+        "sent": {
+          "command_id": "cmd_0002_place",
+          "command_type": "place",
+          "target": "cube",
+          "origin": "haa_rag",
+          "parameters": {
+            "destination": "zone_cube",
+            "aperture_m": 0.075,
+            "approach": "top",
+            "velocity_scale": 1.0,
+            "destination_xyz_m": [
+              0.26,
+              0.12,
+              0.018
+            ]
+          },
+          "constraint": {
+            "active": false,
+            "reason": "no_active_constraint",
+            "approach_offset_xy_m": [
+              0.0,
+              0.0
+            ],
+            "approach_height_delta_m": 0.0,
+            "force_scale": 1.0,
+            "constraints": [],
+            "prerequisites": [],
+            "blocked": false
+          }
+        },
+        "receipt": {
+          "accepted": true,
+          "execution_started": true,
+          "command_id": "cmd_0002_place"
+        }
+      }
+    },
+    {
+      "sequence": 4,
+      "phase": "verify",
+      "kind": "observation",
+      "payload": {
+        "observation_id": "physics_2",
+        "objects": [],
+        "image_paths": [
+          "/home/admin1/ct/Agentic-Policy/Agentic RAG-VLM/\u4eff\u771f\u5b9e\u9a8c/extended_20261102/calibration_v3/single_seed_02/observation_002/top.png"
+        ],
+        "receipt": {
+          "transport": "mujoco_contact_dynamics",
+          "time": 33.31999999999476,
+          "captured_at": 33.31999999999476,
+          "release_state": {
+            "gripper_open": true,
+            "retracted": true
+          },
+          "perception": "vlm_classification_color_rgbd_proposals",
+          "rgbd_candidates": [
+            {
+              "candidate_id": "candidate_0",
+              "top_xyz_m": [
+                0.2605141510661993,
+                0.11937582235800206,
+                0.03588161468505868
+              ],
+              "bbox_xyxy": [
+                289,
+                165,
+                308,
+                185
+              ],
+              "crop_path": "/home/admin1/ct/Agentic-Policy/Agentic RAG-VLM/\u4eff\u771f\u5b9e\u9a8c/extended_20261102/calibration_v3/single_seed_02/observation_002/candidate_0.png"
+            }
+          ],
+          "candidate_preprocessing": "visible color-proposal mask with neutral background; no semantic identity supplied"
+        }
+      }
+    },
+    {
+      "sequence": 5,
+      "phase": "verify",
+      "kind": "perception",
+      "payload": {
+        "mode": "vlm_classification_color_rgbd_proposals",
+        "object_count": 1,
+        "warnings": [
+          "default_visual_aspect:cube"
+        ],
+        "vlm_result": {
+          "parsed": {
+            "candidate_0": "cube"
+          },
+          "raw_text": "{\"candidate_0\":\"cube\"}\n",
+          "latency_ms": 349.30465900106356,
+          "requested_model": "/home/admin1/g2_multimodal_agent/models/Qwen3.5-4B",
+          "response_model": "/home/admin1/g2_multimodal_agent/models/Qwen3.5-4B@main",
+          "usage": {
+            "completion_tokens": 10,
+            "prompt_tokens": 175,
+            "total_tokens": 185
+          },
+          "parse_error": null,
+          "grounding": [
+            {
+              "candidate_id": "candidate_0",
+              "name": "cube",
+              "center_xyz_m": [
+                0.2605141510661993,
+                0.11937582235800206,
+                0.017881614685058684
+              ],
+              "known_half_height_m": 0.018
+            }
+          ],
+          "scene_context": {
+            "states": {},
+            "relations": []
+          },
+          "visual_embeddings": {},
+          "embedding_space": null,
+          "relation_source": "observed_rgbd_plus_known_dimensions; not simulator body poses"
+        }
+      }
+    },
+    {
+      "sequence": 6,
+      "phase": "verify",
+      "kind": "observation",
+      "payload": {
+        "observation_id": "physics_3",
+        "objects": [],
+        "image_paths": [
+          "/home/admin1/ct/Agentic-Policy/Agentic RAG-VLM/\u4eff\u771f\u5b9e\u9a8c/extended_20261102/calibration_v3/single_seed_02/observation_003/top.png"
+        ],
+        "receipt": {
+          "transport": "mujoco_contact_dynamics",
+          "time": 33.519999999995,
+          "captured_at": 33.519999999995,
+          "release_state": {
+            "gripper_open": true,
+            "retracted": true
+          },
+          "perception": "vlm_classification_color_rgbd_proposals",
+          "rgbd_candidates": [
+            {
+              "candidate_id": "candidate_0",
+              "top_xyz_m": [
+                0.2605141510661993,
+                0.11937582235800206,
+                0.03588161468505868
+              ],
+              "bbox_xyxy": [
+                289,
+                165,
+                308,
+                185
+              ],
+              "crop_path": "/home/admin1/ct/Agentic-Policy/Agentic RAG-VLM/\u4eff\u771f\u5b9e\u9a8c/extended_20261102/calibration_v3/single_seed_02/observation_003/candidate_0.png"
+            }
+          ],
+          "candidate_preprocessing": "visible color-proposal mask with neutral background; no semantic identity supplied"
+        }
+      }
+    },
+    {
+      "sequence": 7,
+      "phase": "verify",
+      "kind": "perception",
+      "payload": {
+        "mode": "vlm_classification_color_rgbd_proposals",
+        "object_count": 1,
+        "warnings": [
+          "default_visual_aspect:cube"
+        ],
+        "vlm_result": {
+          "parsed": {
+            "candidate_0": "cube"
+          },
+          "raw_text": "{\"candidate_0\":\"cube\"}\n",
+          "latency_ms": 338.18696200614795,
+          "requested_model": "/home/admin1/g2_multimodal_agent/models/Qwen3.5-4B",
+          "response_model": "/home/admin1/g2_multimodal_agent/models/Qwen3.5-4B@main",
+          "usage": {
+            "completion_tokens": 10,
+            "prompt_tokens": 175,
+            "total_tokens": 185
+          },
+          "parse_error": null,
+          "grounding": [
+            {
+              "candidate_id": "candidate_0",
+              "name": "cube",
+              "center_xyz_m": [
+                0.2605141510661993,
+                0.11937582235800206,
+                0.017881614685058684
+              ],
+              "known_half_height_m": 0.018
+            }
+          ],
+          "scene_context": {
+            "states": {},
+            "relations": []
+          },
+          "visual_embeddings": {},
+          "embedding_space": null,
+          "relation_source": "observed_rgbd_plus_known_dimensions; not simulator body poses"
+        }
+      }
+    },
+    {
+      "sequence": 8,
+      "phase": "verify",
+      "kind": "verification",
+      "payload": {
+        "result": {
+          "target": "cube",
+          "problems": [],
+          "moved_threshold_m": 0.05,
+          "protected_threshold_m": 0.015,
+          "protected_violations": [],
+          "unobserved_protected": [],
+          "invalid_positions": [],
+          "destination_xyz_m": [
+            0.26,
+            0.12,
+            0.018
+          ],
+          "destination_error_m": 0.0008172907257749314,
+          "destination_tolerance_m": 0.025,
+          "verification_scope": "destination_and_displacement",
+          "displacements": {
+            "cube": {
+              "delta_xy_m": [
+                -0.037649,
+                0.240588
+              ],
+              "distance_m": 0.24351622040171325
+            }
+          },
+          "sample_successes": [
+            true,
+            true
+          ],
+          "samples": [
+            {
+              "target": "cube",
+              "problems": [],
+              "moved_threshold_m": 0.05,
+              "protected_threshold_m": 0.015,
+              "protected_violations": [],
+              "unobserved_protected": [],
+              "invalid_positions": [],
+              "destination_xyz_m": [
+                0.26,
+                0.12,
+                0.018
+              ],
+              "destination_error_m": 0.0008172907257749314,
+              "destination_tolerance_m": 0.025,
+              "verification_scope": "destination_and_displacement",
+              "displacements": {
+                "cube": {
+                  "delta_xy_m": [
+                    -0.037649,
+                    0.240588
+                  ],
+                  "distance_m": 0.24351622040171325
+                }
+              }
+            },
+            {
+              "target": "cube",
+              "problems": [],
+              "moved_threshold_m": 0.05,
+              "protected_threshold_m": 0.015,
+              "protected_violations": [],
+              "unobserved_protected": [],
+              "invalid_positions": [],
+              "destination_xyz_m": [
+                0.26,
+                0.12,
+                0.018
+              ],
+              "destination_error_m": 0.0008172907257749314,
+              "destination_tolerance_m": 0.025,
+              "verification_scope": "destination_and_displacement",
+              "displacements": {
+                "cube": {
+                  "delta_xy_m": [
+                    -0.037649,
+                    0.240588
+                  ],
+                  "distance_m": 0.24351622040171325
+                }
+              }
+            }
+          ],
+          "stable": true,
+          "release_confirmed": true
+        },
+        "success": true
+      }
+    }
+  ],
+  "physical_success": true,
+  "checks": {
+    "cube": true,
+    "framework": true,
+    "no_protected_contact": true,
+    "no_arm_table_contact": true,
+    "no_self_contact": true,
+    "protected_stable": true,
+    "target_penetration": true
+  },
+  "final_objects": {
+    "cube": {
+      "xyz": [
+        0.26004568598584127,
+        0.11973421228924737,
+        0.017877596863970745
+      ],
+      "destination_error_m": 0.0002961635429947546,
+      "bilateral_lift_seconds": 9.549999999999859,
+      "supported": true
+    }
+  },
+  "evidence_kind": "mujoco_contact_dynamics",
+  "seed": 2,
+  "mode": "calibration",
+  "friction": 1.0,
+  "memory": {
+    "cube": {
+      "category": "cube",
+      "strategy": {
+        "synergy": "power",
+        "force_n": 0.8,
+        "aperture_m": 0.075,
+        "approach": "top",
+        "_semantic_signature": [
+          "cube",
+          "graspable_body",
+          "rigid",
+          0.1,
+          "body"
+        ],
+        "_execution_domain": "legacy",
+        "base_force_n": 0.8,
+        "approach_height_delta_m": 0.0,
+        "velocity_scale": 1.0,
+        "intrinsic_approach_height_m": 0.0
+      },
+      "quality": 1.0,
+      "source_episode": "extended_2"
+    }
+  },
+  "attempts": [
+    {
+      "target": "cube",
+      "command_id": "cmd_0001_pick",
+      "motor_force_cap_n": 0.8,
+      "initial_tactile": {
+        "normal_force_n": {
+          "left": 0.38125914812686235,
+          "right": 0.41847140091630675
+        },
+        "bilateral": true,
+        "left_finger_q_m": 0.01807029135300893,
+        "downward_load_n": -0.010846630443408802
+      },
+      "retention_samples": [
+        {
+          "time": 10.240000000000089,
+          "normal_force_n": {
+            "left": 0.3997698218784477,
+            "right": 0.40017094296469635
+          },
+          "bilateral": true,
+          "left_finger_q_m": 0.018074589452796216,
+          "downward_load_n": 0.5877988940849924
+        },
+        {
+          "time": 10.280000000000102,
+          "normal_force_n": {
+            "left": 0.39974489094123455,
+            "right": 0.40019762387493946
+          },
+          "bilateral": true,
+          "left_finger_q_m": 0.018075071697571478,
+          "downward_load_n": 0.588092803258561
+        },
+        {
+          "time": 10.320000000000116,
+          "normal_force_n": {
+            "left": 0.39972585618815887,
+            "right": 0.40021722861697256
+          },
+          "bilateral": true,
+          "left_finger_q_m": 0.018075403313693374,
+          "downward_load_n": 0.5882778608009811
+        },
+        {
+          "time": 10.360000000000129,
+          "normal_force_n": {
+            "left": 0.39971198649085465,
+            "right": 0.40023173500110376
+          },
+          "bilateral": true,
+          "left_finger_q_m": 0.018075630709342982,
+          "downward_load_n": 0.5883947199095129
+        },
+        {
+          "time": 10.400000000000142,
+          "normal_force_n": {
+            "left": 0.3997019034865088,
+            "right": 0.40024227794903944
+          },
+          "bilateral": true,
+          "left_finger_q_m": 0.018075786483277338,
+          "downward_load_n": 0.5884687445610973
+        },
+        {
+          "time": 10.440000000000156,
+          "normal_force_n": {
+            "left": 0.3996946370000808,
+            "right": 0.4002498658887989
+          },
+          "bilateral": true,
+          "left_finger_q_m": 0.018075893149744834,
+          "downward_load_n": 0.5885157882622309
+        },
+        {
+          "time": 10.48000000000017,
+          "normal_force_n": {
+            "left": 0.39968944246406607,
+            "right": 0.4002552861977662
+          },
+          "bilateral": true,
+          "left_finger_q_m": 0.018075966159958736,
+          "downward_load_n": 0.5885457849853439
+        },
+        {
+          "time": 10.520000000000183,
+          "normal_force_n": {
+            "left": 0.3996857555828872,
+            "right": 0.4002591334807534
+          },
+          "bilateral": true,
+          "left_finger_q_m": 0.018076016107495874,
+          "downward_load_n": 0.5885649768883449
+        },
+        {
+          "time": 10.560000000000196,
+          "normal_force_n": {
+            "left": 0.3996831560922496,
+            "right": 0.4002618487315383
+          },
+          "bilateral": true,
+          "left_finger_q_m": 0.018076050253514445,
+          "downward_load_n": 0.5885772979713569
+        },
+        {
+          "time": 10.60000000000021,
+          "normal_force_n": {
+            "left": 0.3996813353042835,
+            "right": 0.40026375478130327
+          },
+          "bilateral": true,
+          "left_finger_q_m": 0.018076073574160197,
+          "downward_load_n": 0.5885852352414301
+        }
+      ],
+      "retained": true,
+      "source": "haa_rag"
+    }
+  ],
+  "memory_hits": 0,
+  "reasoner_calls": [],
+  "disable_recovery": false,
+  "disable_memory": false,
+  "uses_vlm": true,
+  "original_paper_trials": false,
+  "object_attachment_used": false,
+  "object_pose_reset_after_initialization": false,
+  "max_protected_displacement_m": 0.0,
+  "simulated_time_s": 33.519999999995
+}

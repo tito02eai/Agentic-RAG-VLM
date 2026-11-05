@@ -8,6 +8,7 @@ registry, perception, mapper, verifier, and the full session loop.
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 import sys
 from typing import Any
@@ -256,6 +257,7 @@ def build_session(scene: dict[str, tuple[float, float, float]], destinations: di
         RegistryMetadataPerception(load_semantic_registry(BLUPE_REGISTRY)),
         GraspActionMapper(command_prefix="test"),
         SceneChangeVerifier(),
+        destinations=destinations,
     )
     return session, runtime
 
@@ -281,6 +283,46 @@ def test_session_completes_stage1_pick_and_place() -> None:
     assert verification["payload"]["success"] is True
 
 
+def test_contact_failure_evicts_memory_when_contact_recovery_is_disabled():
+    session, runtime = build_session({'cube': (.3, .1, .82)}, {'tray': (-.25, .2, .82)})
+    target = blupe_object('cube', (.3, .1))
+    action, _ = runtime.pipeline.plan(target, {'cube': target})
+    runtime.pipeline.remember('cube', action, 1., 'earlier_success')
+    session.transport.send_command = lambda command: {'accepted': False, 'execution_started': True, 'reason': 'grasp_not_retained'}
+    result = session.run(TaskSpec('failed_reuse', 'place cube', (Subgoal('cube', 'tray'),)))
+    assert result['outcome'] == 'safe_stop'
+    assert runtime.pipeline.memory.get('cube') is None
+    assert any(r['kind'] == 'memory_invalidation' for r in result['receipts'])
+    # Execution-time eviction must also reach runtime consumers (UI/event sink),
+    # even though post-placement verification was never reached.
+    events = [e for e in result['trace'] if e['event'] == 'memory_invalidation']
+    assert len(events) == 1
+    assert events[0]['payload']['reason'] == 'observed_retention_failure'
+
+
+@pytest.mark.parametrize('force', [.96, 1.61, float('nan'), True])
+def test_execution_force_feedback_is_bounded_and_only_verified_value_is_remembered(force):
+    session, runtime = build_session({'cube': (.3, .1, .82)}, {'tray': (-.25, .2, .82)})
+    target = blupe_object('cube', (.3, .1))
+    action, _ = runtime.pipeline.plan(target, {'cube': target})
+    runtime.pipeline.remember('cube', replace(action, strategy={**action.strategy, 'force_n': .8}), 1., 'earlier_success')
+    session.mapper = GraspActionMapper(retention_force_adjustment=True)
+    original = session.transport.send_command
+    def send(command):
+        receipt = dict(original(command))
+        if command.command_type == 'pick':
+            receipt['execution_feedback'] = {'force_n': force, 'source': 'public_tactile_low_height_force_adaptation'}
+        return receipt
+    session.transport.send_command = send
+    result = session.run(TaskSpec('feedback', 'place cube', (Subgoal('cube', 'tray'),)))
+    if force == .96 and type(force) is float:
+        assert result['outcome'] == 'complete'
+        assert runtime.pipeline.memory.get('cube').strategy['base_force_n'] == .96
+    else:
+        assert result['outcome'] == 'safe_stop'
+        assert result['trace'][-1]['payload']['reason'] == 'invalid_execution_parameter_feedback'
+
+
 def test_session_safe_stops_when_place_cannot_resolve_destination() -> None:
     session, runtime = build_session({"cup": (0.30, 0.10, 0.80)}, {})
     task = TaskSpec("stage1_bad", "pick the cup", (Subgoal("cup", "missing_zone"),), ())
@@ -288,7 +330,8 @@ def test_session_safe_stops_when_place_cannot_resolve_destination() -> None:
     assert result["outcome"] == "safe_stop"
     assert runtime.completed_targets == []
     stop_events = [event for event in result["trace"] if event["event"] == "safe_stop"]
-    assert stop_events and stop_events[0]["payload"]["reason"] == "subgoal_verification_failed"
+    assert stop_events and stop_events[0]["payload"]["reason"] == "destination_unavailable"
+    assert session.transport.command_log == []
 
 
 def test_session_stage2_protects_vase_and_completes() -> None:
@@ -302,3 +345,159 @@ def test_session_stage2_protects_vase_and_completes() -> None:
     assert runtime.completed_targets == ["cup"]
     verification = next(item for item in result["receipts"] if item["kind"] == "verification")
     assert verification["payload"]["result"]["protected_violations"] == []
+
+
+def test_verifier_rejects_movement_to_wrong_destination() -> None:
+    before = {"cup": blupe_object("cup", (0.3, 0.1))}
+    after = {"cup": blupe_object("cup", (0.1, 0.1))}
+    result = SceneChangeVerifier().verify(
+        "cup", [], before, after, destination_xyz_m=(-0.25, 0.2, 0.82)
+    )
+    assert not result.success
+    assert "target_outside_destination" in result.evidence["problems"]
+
+
+@pytest.mark.parametrize("missing_from", ["before", "after"])
+def test_verifier_requires_protected_object_in_both_observations(missing_from: str) -> None:
+    before = {"cup": blupe_object("cup", (0.3, 0.1)), "vase": blupe_object("vase", (0.4, 0.1))}
+    after = {**before, "cup": blupe_object("cup", (-0.25, 0.2))}
+    (before if missing_from == "before" else after).pop("vase")
+    result = SceneChangeVerifier().verify("cup", ["vase"], before, after)
+    assert not result.success
+    assert result.evidence["unobserved_protected"] == ["vase"]
+
+
+@pytest.mark.parametrize("z", [float("nan"), float("inf")])
+def test_verifier_rejects_nonfinite_positions(z: float) -> None:
+    before = {"cup": blupe_object("cup", (0.3, 0.1))}
+    after = {"cup": replace(before["cup"], center_xyz_m=(-0.25, 0.2, z))}
+    result = SceneChangeVerifier().verify("cup", [], before, after)
+    assert not result.success
+    assert result.evidence["invalid_positions"] == ["cup"]
+
+
+def test_verifier_rejects_vertical_protected_displacement() -> None:
+    before = {"cup": blupe_object("cup", (0.3, 0.1)), "vase": blupe_object("vase", (0.4, 0.1))}
+    after = {
+        "cup": blupe_object("cup", (-0.25, 0.2)),
+        "vase": replace(before["vase"], center_xyz_m=(0.4, 0.1, 0.9)),
+    }
+    result = SceneChangeVerifier().verify("cup", ["vase"], before, after)
+    assert not result.success and result.evidence["protected_violations"] == ["vase"]
+
+
+@pytest.mark.parametrize("rejected_type", ["pick", "place"])
+def test_session_stops_on_rejected_command_without_learning(rejected_type: str) -> None:
+    session, runtime = build_session({"cup": (0.3, 0.1, 0.8)}, {"tray": (-0.25, 0.2, 0.8)})
+    original_send = session.transport.send_command
+    sent = []
+
+    def reject(command):
+        sent.append(command.command_type)
+        if command.command_type == rejected_type:
+            return {"accepted": False, "reason": "test_executor_rejection"}
+        return original_send(command)
+
+    session.transport.send_command = reject
+    result = session.run(TaskSpec("reject", "move cup", (Subgoal("cup", "tray"),)))
+    assert result["outcome"] == "safe_stop"
+    assert result["trace"][-1]["payload"]["reason"] == "command_rejected"
+    assert sent == (["pick"] if rejected_type == "pick" else ["pick", "place"])
+    assert runtime.pipeline.memory.to_dict() == {}
+    assert runtime.completed_targets == []
+
+
+def test_session_checks_protected_visibility_before_motion() -> None:
+    session, _ = build_session({"cup": (0.3, 0.1, 0.8)}, {"tray": (-0.25, 0.2, 0.8)})
+    result = session.run(TaskSpec("missing", "protect vase", (Subgoal("cup", "tray"),), ("vase",)))
+    assert result["outcome"] == "safe_stop"
+    assert session.transport.command_log == []
+
+
+def test_session_does_not_learn_from_wrong_placement() -> None:
+    session, runtime = build_session({"cup": (0.3, 0.1, 0.8)}, {"tray": (-0.25, 0.2, 0.8)})
+    original_send = session.transport.send_command
+
+    def misplace(command):
+        if command.command_type == "place":
+            command = replace(command, parameters={"destination_xyz_m": (0.1, 0.1, 0.8)})
+        return original_send(command)
+
+    session.transport.send_command = misplace
+    result = session.run(TaskSpec("misplace", "move cup", (Subgoal("cup", "tray"),)))
+    assert result["outcome"] == "safe_stop"
+    assert runtime.pipeline.memory.to_dict() == {}
+    verification = next(r for r in result["receipts"] if r["kind"] == "verification")
+    assert "target_outside_destination" in verification["payload"]["result"]["problems"]
+
+
+def test_session_refuses_to_move_a_protected_target() -> None:
+    session, _ = build_session({"cup": (0.3, 0.1, 0.8)}, {"tray": (-0.25, 0.2, 0.8)})
+    result = session.run(TaskSpec("conflict", "move cup", (Subgoal("cup", "tray"),), ("cup",)))
+    assert result["outcome"] == "safe_stop"
+    assert session.transport.command_log == []
+    assert result["trace"][-1]["payload"]["reason"] == "target_is_protected"
+
+
+def test_session_rejects_nonfinite_observation_before_motion() -> None:
+    session, _ = build_session({"cup": (float("nan"), 0.1, 0.8)}, {"tray": (-0.25, 0.2, 0.8)})
+    result = session.run(TaskSpec("invalid", "move cup", (Subgoal("cup", "tray"),)))
+    assert result["outcome"] == "safe_stop"
+    assert session.transport.command_log == []
+    assert result["trace"][-1]["payload"]["reason"] == "invalid_object_position"
+
+
+def test_session_recovers_only_from_known_precontact_ik_rejection() -> None:
+    session, _ = build_session({"cup": (.3, .1, .8)}, {"tray": (-.25, .2, .8)})
+    original_send = session.transport.send_command
+    attempts = []
+    def reject_first(command):
+        if command.command_type == "pick":
+            attempts.append(command)
+            if len(attempts) == 1:
+                return {"accepted": False, "execution_started": False,
+                        "reason": "motion_plan_failed", "detail": "right-arm IK failed"}
+        return original_send(command)
+    session.transport.send_command = reject_first
+    result = session.run(TaskSpec("retry", "move cup", (Subgoal("cup", "tray"),)))
+    assert result["outcome"] == "complete" and len(attempts) == 2
+    assert attempts[-1].parameters["approach_height_delta_m"] == pytest.approx(.03)
+    assert any(e["event"] == "precontact_recovery" for e in result["trace"])
+
+
+def test_session_recovery_budget_and_all_levels_are_audited() -> None:
+    session, runtime = build_session({"cup": (.3, .1, .8)}, {"tray": (-.25, .2, .8)})
+    sent = []
+    def reject_all(command):
+        sent.append(command)
+        return {"accepted": False, "execution_started": False,
+                "reason": "motion_plan_failed", "detail": "right-arm IK failed"}
+    session.transport.send_command = reject_all
+    result = session.run(TaskSpec("reject", "move cup", (Subgoal("cup", "tray"),)))
+    assert result["outcome"] == "safe_stop" and len(sent) == 4
+    levels = [e["payload"]["reflection"]["level"] for e in result["trace"] if e["event"] == "precontact_recovery"]
+    assert levels == [1, 2, 3] and runtime.pipeline.memory.to_dict() == {}
+
+
+def test_session_requires_release_feedback_when_requested() -> None:
+    session, runtime = build_session({"cup": (.3, .1, .8)}, {"tray": (-.25, .2, .8)})
+    session.require_release_confirmation = True
+    result = session.run(TaskSpec("release", "move cup", (Subgoal("cup", "tray"),)))
+    assert result["outcome"] == "safe_stop" and runtime.pipeline.memory.to_dict() == {}
+
+
+def test_session_detects_final_target_drift() -> None:
+    session, runtime = build_session({"cup": (.3, .1, .8)}, {"tray": (-.25, .2, .8)})
+    original_observe = session.transport.get_observation
+    count = 0
+    def drift():
+        nonlocal count
+        count += 1
+        observation = original_observe()
+        if count == 3:
+            objects = tuple(replace(obj, center_xyz_m=(-.21, .2, .8)) if obj.name == "cup" else obj for obj in observation.objects)
+            return replace(observation, objects=objects)
+        return observation
+    session.transport.get_observation = drift
+    result = session.run(TaskSpec("drift", "move cup", (Subgoal("cup", "tray"),)))
+    assert result["outcome"] == "safe_stop" and runtime.pipeline.memory.to_dict() == {}

@@ -1,0 +1,10 @@
+{
+  "schema_version":"agentic_rag_vlm.task_spec.blupe.measured.template.v1",
+  "task_id":"first_measured_rigid_object",
+  "instruction":"Move the measured rigid object to its measured destination",
+  "coordinate_frame":"arm_base",
+  "subgoals":[{"target":"cube","destination":"tray_zone"}],
+  "protected_objects":[],
+  "destinations":{"tray_zone":null},
+  "note":"Execution template, intentionally non-runnable until site configuration is supplied. Set a measured finite [x,y,z] destination in metres in the operating arm base. Never copy simulation force values. The platform entry defaults to full PaperAgent; backend deployment/previews do not require this execution template."
+}

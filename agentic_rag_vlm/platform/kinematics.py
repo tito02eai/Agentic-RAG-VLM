@@ -300,10 +300,13 @@ class YamKinematics:
                     repulsion[index] = (low + margin - model[index]) / margin
                 elif model[index] > high - margin:
                     repulsion[index] = (high - margin - model[index]) / margin
-            weighted = np.vstack([weighted, 0.02 * np.eye(NUM_JOINTS)])
-            error = np.concatenate([error, 0.02 * (repulsion - (model - joints))])
             jjt = weighted @ weighted.T + (damping**2) * np.eye(weighted.shape[0])
             step = weighted.T @ np.linalg.solve(jjt, error)
+            # Limit avoidance is secondary to pose accuracy. Adding it as
+            # extra least-squares rows biases the task solution and can leave
+            # a permanent residual above the acceptance threshold.
+            nullspace = np.eye(NUM_JOINTS) - np.linalg.pinv(weighted) @ weighted
+            step += 0.02 * nullspace @ (repulsion / self._signs)
             step = np.clip(step, -0.25, 0.25)
             joints = self.clamp_to_limits(joints + step)
             if np.linalg.norm(step) < 1e-7:

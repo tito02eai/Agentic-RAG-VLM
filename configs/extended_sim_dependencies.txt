@@ -1,0 +1,11 @@
+# Exact versions used by the 2026-11-02 frozen contact-dynamics batch.
+# Python 3.10.21; ffmpeg is additionally required for raw video recording.
+# Qwen and CLIP inference servers run separately; their weights are not bundled.
+mujoco==3.2.2
+numpy==1.26.4
+Pillow==12.3.0
+scipy==1.14.0
+mediapy==1.2.0
+pytest==8.4.2
+# Optional saved-evidence plots (not part of the physical executor):
+matplotlib==3.10.9

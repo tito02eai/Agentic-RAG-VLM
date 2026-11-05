@@ -1,0 +1,17 @@
+{
+  "purpose": "new contact-dynamics stress tests; not original IROS trials or benchmark-wide superiority",
+  "seeds": [100, 101, 102, 103, 104],
+  "conditions": [
+    {"name": "complex_nominal_full", "mode": "stacked_sort", "friction": 1.0, "memory": true, "recovery": true},
+    {"name": "complex_shift_full", "mode": "stacked_sort", "friction": 0.7, "memory": true, "recovery": true},
+    {"name": "complex_shift_no_memory", "mode": "stacked_sort", "friction": 0.7, "memory": false, "recovery": true},
+    {"name": "complex_shift_no_recovery", "mode": "stacked_sort", "friction": 0.7, "memory": true, "recovery": false},
+    {"name": "single_shift_full", "mode": "single_shift", "friction": 0.7, "memory": true, "recovery": true}
+  ],
+  "geometry": {"targets": "three blocks; smaller yellow block supported on red; separate magenta block; protected green vessel", "jitter_xy_m": 0.004},
+  "physics": {"engine": "MuJoCo 3.2.2", "dt_s": 0.002, "cone": "elliptic", "noslip_iterations": 10, "target_mass_kg": 0.06, "finger_friction": 0.7},
+  "prior": "motor cap 0.8 N observed successful in three separate nominal-friction calibration episodes; no force override in evaluated runs",
+  "recovery": "failure detected by bilateral tactile retention; retry only after release, retreat, two stable RGB-D observations and visible protected/completed objects; paper L1 force x1.2",
+  "criteria": {"destination_error_m_lt": 0.025, "bilateral_lift_above_0_10m_seconds_gt": 0.5, "max_non_target_displacement_m_lt": 0.015, "max_protected_displacement_m_lt": 0.015, "max_contact_penetration_m_lt": 0.003, "completed_release_and_support": true, "support_removal_order": true},
+  "recording": "first declared seed in every condition, irrespective of outcome; raw simulator frames"
+}

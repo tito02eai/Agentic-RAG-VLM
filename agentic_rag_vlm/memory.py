@@ -6,6 +6,9 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 import json
 from typing import Any
+from copy import deepcopy
+import math
+from .experience import atomic_json
 
 
 @dataclass(frozen=True)
@@ -21,19 +24,25 @@ class EpisodicMemory:
         self._entries: dict[str, MemoryEntry] = {}
 
     def put(self, category: str, strategy: dict[str, Any], quality: float, source_episode: str) -> None:
-        candidate = MemoryEntry(category, dict(strategy), float(quality), source_episode)
+        if not category or not source_episode or not math.isfinite(quality) or not 0 <= quality <= 1:
+            raise ValueError("memory requires category, episode and finite quality in [0,1]")
+        candidate = MemoryEntry(category, deepcopy(strategy), float(quality), source_episode)
         previous = self._entries.get(category)
         if previous is None or candidate.quality >= previous.quality:
             self._entries[category] = candidate
 
     def get(self, category: str) -> MemoryEntry | None:
-        return self._entries.get(category)
+        return deepcopy(self._entries.get(category))
+
+    def invalidate(self, category: str) -> MemoryEntry | None:
+        """Drop stale session parameters; the source experience stays in the KB."""
+        return self._entries.pop(category,None)
 
     def to_dict(self) -> dict[str, object]:
         return {key: asdict(value) for key, value in sorted(self._entries.items())}
 
     def save(self, path: Path) -> None:
-        path.write_text(json.dumps(self.to_dict(), indent=2) + "\n", encoding="utf-8")
+        atomic_json(path,self.to_dict())
 
     @classmethod
     def load(cls, path: Path) -> "EpisodicMemory":

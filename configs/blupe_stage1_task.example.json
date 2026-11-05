@@ -9,5 +9,6 @@
   "destinations": {
     "tray_zone": [0.0, -0.10, 0.55]
   },
-  "destination_frame_note": "destinations are in the top camera optical frame (x right, y down, z forward, meters) for remote mode; mock mode treats them as scene coordinates"
+  "remote_execution_allowed": false,
+  "destination_frame_note": "MOCK ONLY. Coordinates are synthetic scene values. For hardware use blupe_measured_task.template.json with measured arm_base destinations and a validated deployment profile."
 }

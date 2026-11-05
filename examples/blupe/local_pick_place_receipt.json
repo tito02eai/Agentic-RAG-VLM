@@ -1,0 +1,37 @@
+{
+  "task": "Move the red rigid cube to the blue destination area without touching or moving the green vessel.",
+  "seed": 1010,
+  "uses_production_provider": true,
+  "uses_official_http_websocket_sdk": true,
+  "transport_replaced": false,
+  "native_kinematics_replaced": false,
+  "model_test_double": false,
+  "framework_outcome": "complete",
+  "controller_error": null,
+  "trajectory_packets": 2,
+  "trajectory_waypoints": 100,
+  "physical": {
+    "evidence_kind": "mujoco_protocol_gateway",
+    "physical_robot_contacted": false,
+    "simulation_success": true,
+    "checks": {
+      "destination": true,
+      "supported": true,
+      "released": true,
+      "bilateral_lift": true,
+      "protected_stable": true,
+      "no_protected_robot_contact": true,
+      "no_arm_table_contact": true,
+      "no_self_contact": true,
+      "target_penetration": true
+    },
+    "destination_error_m": 0.0021091642490096312,
+    "bilateral_lift_seconds": 2.3719999999999604,
+    "max_protected_displacement_m": 5.710435860499473e-05,
+    "object_attachment_used": false,
+    "object_pose_reset_after_initialization": false
+  },
+  "public_robot_contacted": false,
+  "execution_environment": "simulation",
+  "success": true
+}

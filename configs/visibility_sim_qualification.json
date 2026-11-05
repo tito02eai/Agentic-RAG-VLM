@@ -1,0 +1,14 @@
+{
+  "purpose": "Independent new-seed test of visibility-aware support removal; all previous seeds are development or separate r6 data",
+  "study": "visibility_replanning",
+  "seeds": [800, 801, 802, 803, 804, 805, 806, 807, 808, 809],
+  "iteration_order": "paired_seed",
+  "model_health_required": true,
+  "record_seeds": [800, 805],
+  "conditions": [
+    {"name": "mixed_enhanced", "mode": "stacked_sort", "friction": 0.7, "memory": true, "recovery": true, "controller_profile": "guarded", "recovery_policy": "force_ladder", "scene_variation": "mixed_contact", "mixed_shapes": true, "grounding_repair": true, "multiccd": true, "visibility_replanning": true},
+    {"name": "mixed_strict_visibility", "mode": "stacked_sort", "friction": 0.7, "memory": true, "recovery": true, "controller_profile": "guarded", "recovery_policy": "force_ladder", "scene_variation": "mixed_contact", "mixed_shapes": true, "grounding_repair": true, "multiccd": true, "visibility_replanning": false}
+  ],
+  "protocol": "docs/VISIBILITY_REPLANNING_PROTOCOL.md",
+  "notes": "Both conditions receive the same reorderable sorting task, camera and physics, identity reviewer, RAG and proof-lift tools. Only visibility reordering is enabled/disabled. Missing labels are never filled by elimination. No deliberate model errors or forced failures; natural occlusion/recognition outcomes are retained. Known 700 is excluded from these scores."
+}

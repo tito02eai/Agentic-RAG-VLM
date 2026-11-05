@@ -35,9 +35,10 @@ class PlatformCommand:
 class GraspActionMapper:
     """Translate pipeline ``GraspAction`` outputs into platform commands."""
 
-    def __init__(self, *, command_prefix: str = "cmd") -> None:
+    def __init__(self, *, command_prefix: str = "cmd", retention_force_adjustment: bool = False) -> None:
         self.command_prefix = command_prefix
         self._counter = 0
+        self.retention_force_adjustment = retention_force_adjustment
 
     def _next_id(self, command_type: str) -> str:
         self._counter += 1
@@ -51,7 +52,17 @@ class GraspActionMapper:
             "force_n": float(strategy.get("force_n", 10.0)),
             "aperture_m": float(strategy.get("aperture_m", 0.07)),
             "approach": strategy.get("approach", "top"),
+            "velocity_scale": float(strategy.get("velocity_scale", 1)),
+            "approach_height_delta_m": float(strategy.get("approach_height_delta_m", 0)),
+            "approach_offset_xy_m": action.constraint.get("approach_offset_xy_m", [0.0, 0.0]),
+            "approach_yaw_delta_rad":float(strategy.get("approach_yaw_delta_rad",0)),
+            "wrist_yaw_delta_rad":float(strategy.get("wrist_yaw_delta_rad",0)),
         }
+        if self.retention_force_adjustment:
+            signature = strategy.get('_semantic_signature', [])
+            parameters['retention_force_policy'] = {'maximum_adjustments': 3, 'scale': 1.2,
+                'ceiling_n': 1.6, 'maximum_fragility': .25,
+                'observed_fragility': signature[3] if len(signature) > 3 else 1.}
         return PlatformCommand(
             command_id=self._next_id("pick"),
             command_type="pick",
@@ -68,7 +79,12 @@ class GraspActionMapper:
         *,
         destination_xyz_m: tuple[float, float, float] | None = None,
     ) -> PlatformCommand:
-        parameters: dict[str, Any] = {"destination": destination}
+        parameters: dict[str, Any] = {
+            "destination": destination,
+            "aperture_m": float(action.strategy.get("aperture_m", 0.07)),
+            "approach": action.strategy.get("approach", "top"),
+            "velocity_scale": float(action.strategy.get("velocity_scale", 1)),
+        }
         if destination_xyz_m is not None:
             parameters["destination_xyz_m"] = list(destination_xyz_m)
         return PlatformCommand(

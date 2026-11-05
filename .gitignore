@@ -15,3 +15,20 @@ artifacts/
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# Site-specific data, credentials and generated model/runtime files
+.env
+.env.*
+!.env.example
+*.local.json
+*.local.yaml
+*.local.yml
+*.pem
+*.key
+*.safetensors
+*.ckpt
+models/
+recordings/
+third_party/
+dist/
+build/

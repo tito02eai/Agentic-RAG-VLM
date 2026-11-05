@@ -20,6 +20,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping, Protocol, Sequence
+from datetime import datetime
+import time
+import numpy as np
 
 from .blupe_client import (
     BluPeAPIError,
@@ -31,6 +34,7 @@ from .commands import PlatformCommand
 from .config import PlatformConfig
 from .kinematics import NUM_JOINTS, YamKinematics
 from .motion import MotionPlan, MotionPlanError, YamMotionPlanner
+from .geometry import finite_vector
 
 
 class PlatformUnavailableError(RuntimeError):
@@ -105,6 +109,7 @@ class RemotePlatformTransport:
         run_duration_s: int = 300,
         session_model: str | None = None,
         require_settled_first_command: bool = True,
+        deployment_profile: Mapping[str, Any] | None = None,
     ) -> None:
         if config.platform != "blupe":
             raise ValueError(
@@ -118,6 +123,7 @@ class RemotePlatformTransport:
         self.run_duration_s = int(run_duration_s)
         self.session_model = session_model
         self.require_settled_first_command = require_settled_first_command
+        self.deployment_profile = dict(deployment_profile or {})
         self.image_dir = Path(image_dir)
         self.destinations: dict[str, tuple[float, float, float]] = {
             str(name): (float(xyz[0]), float(xyz[1]), float(xyz[2]))
@@ -138,6 +144,8 @@ class RemotePlatformTransport:
         self._calibration: dict[str, Any] | None = None
         self._last_station: dict[str, Any] = {}
         self._first_command_sent = False
+        self._last_place: dict[str, Any] | None = None
+        self._gripper_hold_command: float | None = None
 
     # ------------------------------------------------------------ helpers
 
@@ -168,6 +176,8 @@ class RemotePlatformTransport:
 
     def _camera_to_base(self, position_m: Sequence[float]) -> tuple[float, float, float]:
         """Map a top-camera optical frame point into the operating arm's base frame."""
+        if self.deployment_profile.get("coordinate_frame") == "arm_base":
+            return tuple(float(v) for v in finite_vector(position_m, 3, "base position"))
         calibration = self.calibration()
         top = calibration.get("cameras", {}).get("top", {})
         transforms = top.get("T_base_camera", {})
@@ -197,7 +207,12 @@ class RemotePlatformTransport:
                 f"station observation has no {NUM_JOINTS}-joint state for the {self.arm} arm"
             )
         gripper = station.get(f"{self.arm}_gripper")
-        other_gripper = station.get(other_key.replace("joints", "gripper"))
+        other_gripper = station.get(("left" if self.arm == "right" else "right") + "_gripper")
+        if self.deployment_profile:
+            if len(other) != NUM_JOINTS or not np.isfinite(joints).all() or not np.isfinite(other).all():
+                raise PlatformUnavailableError("finite measured state for both arms required")
+            if any(value is None or not np.isfinite(value) or not 0 <= value <= 1 for value in (gripper, other_gripper)):
+                raise PlatformUnavailableError("measured normalized gripper states required for both arms")
         return (
             joints,
             float(gripper) if gripper is not None else None,
@@ -207,6 +222,10 @@ class RemotePlatformTransport:
 
     def _safety_gate(self) -> dict[str, Any]:
         station = self._station()
+        if self.deployment_profile:
+            self._check_station_freshness(station)
+            if not station.get("homed") or not station.get("settled"):
+                raise PlatformUnavailableError("fresh homed and settled state required before each command")
         safety = station.get("safety", {})
         if safety.get("estop_engaged"):
             raise PlatformUnavailableError("station e-stop is engaged; refusing to command")
@@ -288,7 +307,11 @@ class RemotePlatformTransport:
         observation_id = f"blupe_obs_{self._observation_counter:04d}"
         image_paths: dict[str, str] = {}
         try:
-            image_paths = self.client.download_observation_images(station, self.image_dir)
+            if self.deployment_profile.get('top_rgb_source')=='paired_rgbd':
+                from .camera_contract import fetch_paired_top
+                image_paths=fetch_paired_top(self.client,self.config.robot_id,self.calibration(),self.image_dir/observation_id)
+            else:
+                image_paths = self.client.download_observation_images(station, self.image_dir / observation_id)
         except BluPeAPIError as error:
             raise PlatformUnavailableError(f"camera image download failed: {error}") from error
         receipt = {
@@ -308,7 +331,31 @@ class RemotePlatformTransport:
                 "right": list(station.get("right_joints_deg", ())),
             },
             "session": self.handle.to_public_dict() if self.handle else None,
+            "top_rgb_source":self.deployment_profile.get('top_rgb_source','jpeg'),
         }
+        if self.deployment_profile:
+            self._check_station_freshness(station)
+            if not station.get("settled"):
+                raise PlatformUnavailableError("geometric perception requires settled feedback")
+            if "top" not in image_paths:
+                raise PlatformUnavailableError("top camera missing")
+            headers = getattr(self.client, "image_metadata", {}).get(image_paths["top"], {})
+            headers = {key.lower(): value for key, value in headers.items()}
+            captured = headers.get("x-captured-at")
+            self._check_age(captured, "top capture")
+            receipt.update({"camera_role": "top", "captured_at": captured,
+                            "calibration_id": self.calibration()["calibration_id"]})
+            if self._last_place is not None:
+                joints, gripper, _, _ = self._current_arm_state()
+                tcp = self.motion_planner.kinematics.fk(np.radians(joints))[:3, 3]
+                distance = float(np.linalg.norm(tcp - self._last_place["position"]))
+                receipt["release_state"] = {
+                    "gripper_open": gripper is not None and gripper >= self._last_place["open_command"] - 0.05,
+                    "retracted": distance >= 0.05,
+                    "tcp_destination_distance_m": distance,
+                    "measured_gripper": gripper,
+                }
+            image_paths = {"top": image_paths["top"]}
         return PlatformObservation(
             observation_id=observation_id,
             objects=(),
@@ -316,12 +363,39 @@ class RemotePlatformTransport:
             receipt=receipt,
         )
 
+    def _check_age(self, value: Any, label: str) -> None:
+        try:
+            stamp = float(value)
+        except (ValueError, TypeError):
+            try:
+                stamp = datetime.fromisoformat(str(value).replace("Z", "+00:00")).timestamp()
+            except (ValueError, TypeError) as error:
+                raise PlatformUnavailableError(f"missing/invalid {label} timestamp") from error
+        age = time.time() - stamp
+        if not np.isfinite(age) or age < -1 or age > float(self.deployment_profile.get("max_observation_age_s", 2)):
+            raise PlatformUnavailableError(f"stale or future {label}")
+
+    def _check_station_freshness(self, station: Mapping[str, Any]) -> None:
+        self._check_age(station.get("observed_at"), "station")
+        environment=self.deployment_profile.get('execution_environment','hardware')
+        if environment=='simulation':
+            from .deployment import validate_execution_binding
+            validate_execution_binding(self.deployment_profile,self.config.endpoint_base,
+                session_api=getattr(self.client,'api',None))
+            if station.get('source')!='simulation':raise PlatformUnavailableError('explicit simulation feedback required')
+        elif station.get("source") != "hardware":
+            raise PlatformUnavailableError("measured hardware feedback required")
+
     # -------------------------------------------------------- command path
 
     def _plan(self, command: PlatformCommand) -> MotionPlan:
         joints, gripper, other_joints, other_gripper = self._current_arm_state()
         parameters = dict(command.parameters)
         approach = str(parameters.get("approach", "top"))
+        if any(float(parameters.get(key,0)) != 0 for key in ("approach_yaw_delta_rad","wrist_yaw_delta_rad")):
+            raise MotionPlanError("yaw recovery is not calibrated for the hardware profile")
+        if self.deployment_profile and approach != self.deployment_profile["approach"]:
+            raise MotionPlanError("approach has not been validated for this station profile")
         aperture = float(parameters.get("aperture_m", 0.07))
         if command.command_type == "pick":
             position_xyz = parameters.get("position_xyz_m")
@@ -330,6 +404,8 @@ class RemotePlatformTransport:
                     f"pick command {command.command_id} has no position_xyz_m"
                 )
             position = self._camera_to_base(position_xyz)
+            if self.deployment_profile:
+                position = np.asarray(position) + np.asarray(self.deployment_profile["grasp_offsets_base_m"][command.target])
             return self.motion_planner.plan_pick(
                 arm=self.arm,
                 joints_deg_current=joints,
@@ -337,6 +413,9 @@ class RemotePlatformTransport:
                 target_xyz_m=position,
                 aperture_m=aperture,
                 approach=approach,
+                approach_height_delta_m=float(parameters.get("approach_height_delta_m", 0)),
+                approach_offset_xy_m=parameters.get("approach_offset_xy_m", (0, 0)),
+                velocity_scale=float(parameters.get("velocity_scale", 1)),
                 other_joints_deg=other_joints,
                 other_gripper=other_gripper,
             )
@@ -350,6 +429,8 @@ class RemotePlatformTransport:
                     )
                 destination_xyz = self.destinations[destination_name]
             position = self._camera_to_base(destination_xyz)
+            if self.deployment_profile:
+                position = np.asarray(position) + np.asarray(self.deployment_profile["grasp_offsets_base_m"][command.target])
             return self.motion_planner.plan_place(
                 arm=self.arm,
                 joints_deg_current=joints,
@@ -357,8 +438,10 @@ class RemotePlatformTransport:
                 destination_xyz_m=position,
                 aperture_m=aperture,
                 approach=approach,
+                velocity_scale=float(parameters.get("velocity_scale", 1)),
                 other_joints_deg=other_joints,
                 other_gripper=other_gripper,
+                hold_gripper_command=self._gripper_hold_command,
             )
         if command.command_type == "home":
             return self.motion_planner.plan_hold(
@@ -392,6 +475,7 @@ class RemotePlatformTransport:
         packet_results: list[dict[str, Any]] = []
         try:
             for packet in packets:
+                self._safety_gate()
                 ack = self.client.submit_trajectory_packet(handle, packet)
                 result = self.client.wait_for_trajectory(
                     handle,
@@ -406,6 +490,8 @@ class RemotePlatformTransport:
                         "result": dict(result),
                     }
                 )
+                if result.get("status") != "completed":
+                    break
         except BluPeAPIError as error:
             raise PlatformUnavailableError(f"trajectory execution failed: {error}") from error
         finally:
@@ -436,6 +522,8 @@ class RemotePlatformTransport:
         self._safety_gate()
         try:
             plan = self._plan(command)
+            if self.deployment_profile:
+                self._validate_plan_geometry(plan)
         except MotionPlanError as error:
             return {
                 "transport": "blupe",
@@ -444,8 +532,54 @@ class RemotePlatformTransport:
                 "accepted": False,
                 "reason": "motion_plan_failed",
                 "detail": str(error),
+                "execution_started": False,
             }
-        return self._execute_plan(command, plan)
+        receipt = self._execute_plan(command, plan)
+        if command.command_type=='pick':
+            self._gripper_hold_command=plan.keyframes[-1].gripper if receipt.get('accepted') is True else None
+            gate=self.deployment_profile.get('retention_observation')
+            if receipt.get('accepted') is True and gate:
+                joints,measured,_,_=self._current_arm_state()
+                tcp=self.motion_planner.kinematics.fk(np.radians(joints))[:3,3]
+                source=np.asarray(self._camera_to_base(command.parameters['position_xyz_m']))
+                retained=(measured is not None and gate['minimum_blocked_aperture']<=measured<=gate['maximum_blocked_aperture']
+                          and float(tcp[2]-source[2])>=gate['minimum_tcp_lift_m'])
+                receipt['retention_observation']={'passed':bool(retained),'measured_gripper':measured,
+                    'commanded_gripper':self._gripper_hold_command,'tcp_height_change_m':float(tcp[2]-source[2]),
+                    'source':'measured_joint_and_gripper_proxy;not_calibrated_object_force'}
+                if not retained:
+                    receipt.update(accepted=False,execution_started=True,reason='retention_unconfirmed')
+                    self._gripper_hold_command=None
+        receipt["unsupported_control_fields"] = [
+            key for key in ("force_n", "synergy") if key in command.parameters
+        ]
+        if command.command_type == "place" and receipt.get("accepted") is True:
+            self._gripper_hold_command=None
+            position = command.parameters.get("destination_xyz_m")
+            if position is None:
+                position = self.destinations[command.parameters["destination"]]
+            self._last_place = {
+                "position": np.asarray(self._camera_to_base(position)),
+                "open_command": self.motion_planner.kinematics.gripper_command_for_aperture(float(command.parameters.get("aperture_m", 0.07))),
+            }
+        return receipt
+
+    def _validate_plan_geometry(self, plan: MotionPlan) -> None:
+        bounds = np.asarray(self.deployment_profile["workspace_bounds_m"], dtype=float)
+        plane = self.deployment_profile["support_plane"]
+        table_z = -float(plane["offset_m"])
+        for joints, _ in plan.interpolated_steps(
+            max_joint_delta_deg_per_step=self.motion_planner.max_joint_delta_deg_per_step
+        ):
+            q = np.radians(joints)
+            if not np.isfinite(q).all() or not self.motion_planner.kinematics.in_limits(q):
+                raise MotionPlanError("joint trajectory outside calibrated limits")
+            tcp = self.motion_planner.kinematics.fk(q)[:3, 3]
+            if np.any(tcp < bounds[:, 0]) or np.any(tcp > bounds[:, 1]):
+                raise MotionPlanError("TCP trajectory leaves measured workspace")
+            if tcp[2] < table_z + 0.005:
+                raise MotionPlanError("TCP trajectory violates table clearance")
+        plan.notes.append("validated:sampled_tcp_workspace_and_table_clearance;full_arm_collision_not_certified")
 
 
 class MockPlatformTransport:

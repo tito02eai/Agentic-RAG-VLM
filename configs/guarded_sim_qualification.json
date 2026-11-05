@@ -1,0 +1,16 @@
+{
+  "purpose": "New-seed qualification of bounded proof-lift tools and memory feedback; separate from all r5 and development cases",
+  "study": "guarded_retention",
+  "seeds": [700, 701, 702, 703, 704, 705],
+  "iteration_order": "paired_seed",
+  "model_health_required": true,
+  "record_seeds": [700, 703],
+  "mode_by_seed": {"703": "flat_sort", "704": "flat_sort", "705": "flat_sort"},
+  "conditions": [
+    {"name": "mixed_enhanced", "mode": "stacked_sort", "friction": 0.7, "memory": true, "recovery": true, "controller_profile": "guarded", "recovery_policy": "force_ladder", "scene_variation": "mixed_contact", "mixed_shapes": true, "grounding_repair": true, "multiccd": true},
+    {"name": "mixed_no_proof", "mode": "stacked_sort", "friction": 0.7, "memory": true, "recovery": true, "controller_profile": "robust", "recovery_policy": "force_ladder", "scene_variation": "mixed_contact", "mixed_shapes": true, "grounding_repair": true, "multiccd": true},
+    {"name": "mixed_no_memory", "mode": "stacked_sort", "friction": 0.7, "memory": false, "recovery": true, "controller_profile": "guarded", "recovery_policy": "force_ladder", "scene_variation": "mixed_contact", "mixed_shapes": true, "grounding_repair": true, "multiccd": true}
+  ],
+  "protocol": "docs/R6_REPAIR_PROTOCOL.md",
+  "notes": "Identical scene XML per seed across conditions, including multi-contact collision and all cameras. Full treatment bundles proof lift, bounded tactile force feedback and cylinder center compensation; no isolated submodule superiority claim. Frozen r5 and all known-seed development runs remain separate."
+}

@@ -15,7 +15,7 @@ from agentic_rag_vlm.memory import EpisodicMemory  # noqa: E402
 from agentic_rag_vlm.pipeline import AgenticPipeline, PipelineConfig  # noqa: E402
 from agentic_rag_vlm.qwen_adapter import extract_json_object  # noqa: E402
 from agentic_rag_vlm.quality import QualityFactors, WEIGHTS, evaluate_quality  # noqa: E402
-from agentic_rag_vlm.recovery import FailureType, recover  # noqa: E402
+from agentic_rag_vlm.recovery import FailureType, PAPER_FAILURE_TYPES, recover  # noqa: E402
 from scripts.agentic_framework import (  # noqa: E402
     PublicObject,
     build_scene_graph,
@@ -85,7 +85,8 @@ def test_quality_memory_and_three_level_recovery_contract() -> None:
     assert np.isclose(sum(WEIGHTS.values()), 1.0)
     quality = evaluate_quality(QualityFactors(1, 1, 1, 1, 1, 1, 1))
     assert quality.success and np.isclose(quality.score, 1.0)
-    assert len(FailureType) == 14
+    assert len(PAPER_FAILURE_TYPES) == 14
+    assert FailureType.RETENTION_MARGIN not in PAPER_FAILURE_TYPES
     strategy = {"synergy": "power", "force_n": 10.0, "aperture_m": 0.06}
     assert recover(strategy, FailureType.SLIP, 1).corrected_strategy["force_n"] == 12.0
     assert recover(strategy, FailureType.SLIP, 2).level == 2
@@ -94,6 +95,19 @@ def test_quality_memory_and_three_level_recovery_contract() -> None:
     memory.put("cube", strategy, 0.8, "episode-1")
     memory.put("cube", {"synergy": "pinch"}, 0.7, "episode-2")
     assert memory.get("cube").strategy["synergy"] == "power"
+
+
+@pytest.mark.parametrize('config', [PipelineConfig(recovery_enabled=False), PipelineConfig(max_retries=0)])
+def test_failed_memory_is_evicted_even_without_a_retry(config):
+    pipeline = AgenticPipeline(load_cards(CARDS), config)
+    target = obj('red_cube', (-.18, -.2))
+    action, _ = pipeline.plan(target, {target.name: target})
+    pipeline.remember(target.category, action, 1., 'verified_before')
+    result = pipeline.run('failed_reuse', target, {target.name: target}, lambda action: {
+        'success': False, 'quality_factors': {name: 1. for name in WEIGHTS}})
+    assert not result['success'] and result['attempts'] == 1
+    assert result['trace'][0]['action']['source'] == 'episodic_memory'
+    assert pipeline.memory.get(target.category) is None
 
 
 def test_react_pipeline_stores_success_in_memory() -> None:

@@ -58,6 +58,21 @@ def test_runtime_completes_two_subgoals_with_memory_preserved() -> None:
     assert runtime.completed_targets == ["red_cube", "blue_cylinder"]
 
 
+def test_failed_verification_evicts_reused_memory_without_learning():
+    runtime = AgenticRuntime(AgenticPipeline(load_cards(CARDS)))
+    scene = objects(); target = scene['red_cube']
+    action, _ = runtime.pipeline.plan(target, scene)
+    runtime.pipeline.remember(target.category, action, 1., 'older_verified_task')
+    runtime.start(task()); runtime.observe(scene)
+    reused = runtime.plan(scene)
+    assert reused.source == 'episodic_memory'
+    runtime.begin_execution(skill='power_pick_place')
+    runtime.verify(False, quality=0., evidence={'problems': ['target_outside_destination']})
+    assert runtime.phase == RuntimePhase.SAFE_STOP
+    assert runtime.pipeline.memory.get(target.category) is None
+    assert any(e['event'] == 'memory_invalidation' for e in runtime.trace())
+
+
 def test_runtime_replans_only_pending_target_and_keeps_completed_work() -> None:
     runtime = AgenticRuntime(AgenticPipeline(load_cards(CARDS)), RuntimeConfig(maximum_replans=1))
     scene = objects()

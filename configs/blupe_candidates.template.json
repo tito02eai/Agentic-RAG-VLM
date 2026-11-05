@@ -1,0 +1,9 @@
+{
+  "kind": "color_regions",
+  "image_size_px": null,
+  "roi_xyxy": null,
+  "hsv_bands": [],
+  "minimum_area_px": 15,
+  "maximum_area_px": 20000,
+  "note": "Non-runnable template. Set original camera [width,height], tabletop ROI and site-checked HSV bands (all four band fields use Pillow 0–255 scale). Regions have no object identities. Avoid same-color backgrounds, touching objects and overlapping bands. Revalidate on original images and after placement."
+}

@@ -198,12 +198,14 @@ class BluPeSessionClient:
             body = json.dumps(dict(payload)).encode("utf-8")
             headers["Content-Type"] = "application/json"
         last_error: Exception | None = None
-        for attempt in range(self.max_retries + 1):
+        retries = 0 if method == "POST" and path == "/v1/sessions" else self.max_retries
+        for attempt in range(retries + 1):
             try:
                 request = urllib.request.Request(url, data=body, headers=headers, method=method)
                 with urllib.request.urlopen(request, timeout=self.request_timeout_s) as response:
                     raw = response.read()
                     if not is_json:
+                        self.last_binary_headers = dict(getattr(response, "headers", {}).items())
                         return raw
                     if not raw:
                         return {}
@@ -211,15 +213,15 @@ class BluPeSessionClient:
             except urllib.error.HTTPError as error:
                 detail = error.read().decode("utf-8", "replace")[:500]
                 # Client errors are contract failures; do not retry blindly.
-                if 400 <= error.code < 500 or attempt >= self.max_retries:
+                if 400 <= error.code < 500 or attempt >= retries:
                     raise BluPeAPIError(
                         f"{method} {url} failed: HTTP {error.code}: {detail}"
                     ) from error
                 last_error = error
             except (urllib.error.URLError, TimeoutError, OSError) as error:
-                if attempt >= self.max_retries:
+                if attempt >= retries:
                     raise BluPeConnectionError(
-                        f"{method} {url} unreachable after {self.max_retries + 1} attempts: {error}"
+                        f"{method} {url} unreachable after {retries + 1} attempts: {error}"
                     ) from error
                 last_error = error
             self._sleep(0.5 * (attempt + 1))
@@ -252,6 +254,9 @@ class BluPeSessionClient:
         raw = self._request("GET", url, is_json=False)
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(raw)
+        if not hasattr(self, "image_metadata"):
+            self.image_metadata = {}
+        self.image_metadata[str(destination)] = dict(getattr(self, "last_binary_headers", {}))
         return destination
 
     def download_observation_images(
@@ -420,18 +425,27 @@ class BluPeSessionClient:
     ) -> dict[str, Any] | None:
         """Search the episode trace for a trajectory's terminal result."""
         trace = self.get_episode_trace(handle)
+        pending=None
         for key in ("trajectory_results", "results", "events"):
             entries = trace.get(key)
             if not isinstance(entries, list):
                 continue
-            for entry in entries:
+            accepted=None
+            for entry in reversed(entries):
+                if isinstance(entry,dict) and isinstance(entry.get('payload'),dict):
+                    entry=entry['payload']
                 if (
                     isinstance(entry, dict)
                     and entry.get("trajectory_id") == trajectory_id
                     and entry.get("status") in {"accepted", "rejected", "completed", "aborted"}
                 ):
-                    return dict(entry)
-        return None
+                    if entry['status']!='accepted':return dict(entry)
+                    accepted=dict(entry)
+            if accepted is not None:
+                # A later trace collection can still contain terminal events.
+                # Keep scanning instead of masking completion with acceptance.
+                pending=accepted
+        return pending
 
     def wait_for_trajectory(
         self,

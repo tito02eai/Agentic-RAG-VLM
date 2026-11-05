@@ -1,0 +1,19 @@
+{
+  "purpose": "Frozen stratified physical occlusion study with an informative geometric baseline and separate retrieval/visibility controls",
+  "study": "stratified_occlusion",
+  "knowledge_store": "knowledge_base/yam_verified_diverse_r8.json",
+  "seeds": [920, 921, 922, 923, 924, 925, 926, 927, 928, 929, 930, 931],
+  "iteration_order": "paired_seed",
+  "model_health_required": true,
+  "record_seeds": [920, 924, 928],
+  "upper_half_width_by_seed": {"920":0.012,"921":0.012,"922":0.012,"923":0.012,"924":0.015,"925":0.015,"926":0.015,"927":0.015,"928":0.017,"929":0.017,"930":0.017,"931":0.017},
+  "occlusion_level_by_seed": {"920":"rim_6mm","921":"rim_6mm","922":"rim_6mm","923":"rim_6mm","924":"rim_3mm","925":"rim_3mm","926":"rim_3mm","927":"rim_3mm","928":"rim_1mm","929":"rim_1mm","930":"rim_1mm","931":"rim_1mm"},
+  "conditions": [
+    {"name":"mixed_enhanced","mode":"stacked_sort","friction":0.7,"memory":true,"recovery":true,"scene_graph":true,"controller_profile":"guarded","recovery_policy":"force_ladder","scene_variation":"mixed_contact","mixed_shapes":true,"grounding_repair":true,"multiccd":true,"visibility_replanning":true,"retrieval_profile":"haa","planning_policy":"agentic"},
+    {"name":"mixed_strict_visibility","mode":"stacked_sort","friction":0.7,"memory":true,"recovery":true,"scene_graph":true,"controller_profile":"guarded","recovery_policy":"force_ladder","scene_variation":"mixed_contact","mixed_shapes":true,"grounding_repair":true,"multiccd":true,"visibility_replanning":false,"retrieval_profile":"haa","planning_policy":"agentic"},
+    {"name":"mixed_fixed_skill","mode":"stacked_sort","friction":0.7,"memory":true,"recovery":true,"scene_graph":true,"controller_profile":"guarded","recovery_policy":"force_ladder","scene_variation":"mixed_contact","mixed_shapes":true,"grounding_repair":true,"multiccd":true,"visibility_replanning":true,"retrieval_profile":"fixed","planning_policy":"agentic"},
+    {"name":"mixed_geometric","mode":"stacked_sort","friction":0.7,"memory":false,"recovery":true,"scene_graph":false,"controller_profile":"guarded","recovery_policy":"force_ladder","scene_variation":"mixed_contact","mixed_shapes":true,"grounding_repair":true,"multiccd":true,"visibility_replanning":false,"retrieval_profile":"fixed","planning_policy":"geometric"}
+  ],
+  "protocol":"docs/STRATIFIED_COMPARISON_PROTOCOL.md",
+  "notes":"12 new independent seeds, 4 per physical footprint stratum; 48 paired rollouts. Footprint changes visibility AND grasp geometry, so cross-stratum differences are descriptive. Within each seed, scene XML is identical across all 4 methods. Geometric comparison retains the same bounded observed contact retries, but no Agent task reasoning, retrieval, memory or visibility witness logic. No forced VLM errors; all outcomes retained."
+}

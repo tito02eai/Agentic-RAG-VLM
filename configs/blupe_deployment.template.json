@@ -1,0 +1,17 @@
+{
+  "schema_version": "blupe.measured_deployment.v1",
+  "robot_id": "yam-1",
+  "arm": "right",
+  "coordinate_frame": "arm_base",
+  "calibration_id": null,
+  "physical_validation": {"passed": false, "record": null},
+  "support_plane": {"normal_base": [0, 0, 1], "offset_m": null},
+  "joint_limits_deg": null,
+  "workspace_bounds_m": null,
+  "feature_heights_m": {},
+  "grasp_offsets_base_m": {},
+  "gripper": {"max_aperture_m": null},
+  "max_observation_age_s": 2.0,
+  "approach": "top",
+  "note": "Template only. Fill measured station geometry, native joint limits and a physical-validation reference. No default values certify hardware readiness. Destinations and geometry are in the selected arm base."
+}

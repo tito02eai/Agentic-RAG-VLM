@@ -1,0 +1,19 @@
+{
+  "purpose": "r5 controlled extension: independent layouts, mixed shapes and unobserved contact dynamics; separate from r4 and original paper trials",
+  "seeds": [500,501,502,503,504,505,506,507,508,509],
+  "mode_by_seed": {"500":"stacked_sort","501":"stacked_sort","502":"stacked_sort","503":"stacked_sort","504":"stacked_sort","505":"flat_sort","506":"flat_sort","507":"flat_sort","508":"flat_sort","509":"flat_sort"},
+  "iteration_order": "paired_seed",
+  "model_health_required": true,
+  "record_seeds": [500,505],
+  "conditions": [
+    {"name":"mixed_enhanced","mode":"stacked_sort","friction":0.7,"memory":true,"recovery":true,"controller_profile":"robust","recovery_policy":"force_ladder","scene_variation":"mixed_contact","mixed_shapes":true},
+    {"name":"mixed_paper","mode":"stacked_sort","friction":0.7,"memory":true,"recovery":true,"controller_profile":"robust","recovery_policy":"paper","scene_variation":"mixed_contact","mixed_shapes":true},
+    {"name":"mixed_no_memory","mode":"stacked_sort","friction":0.7,"memory":false,"recovery":true,"controller_profile":"robust","recovery_policy":"force_ladder","scene_variation":"mixed_contact","mixed_shapes":true}
+  ],
+  "geometry": {"targets":"red/yellow cuboids plus magenta cylinder and protected green vessel","initial_xy_independent_jitter_m":0.015,"third_xy_jitter_m":0.012,"destination_xy_independent_jitter_m":0.012,"protected_xy_jitter_m":0.008},
+  "physics": {"engine":"MuJoCo 3.2.2","dt_s":0.002,"cone":"elliptic","noslip_iterations":10,"mass_kg_uniform":[0.055,0.075],"object_friction_uniform":[0.6,1.0],"finger_friction":0.7,"combination_note":"MuJoCo uses the maximum sliding coefficient, so effective friction is at least 0.7; sampled parameters are private evaluation metadata"},
+  "policy_extension": {"name":"feedback-gated supported parameter adaptation","max_retries_per_target":3,"multiplier":1.2,"maximum_motor_force_n":1.6,"max_supported_fragility":0.25,"fresh_release_observations":2,"unvalidated_method_switch":"refuse, not pretend to execute"},
+  "controller_extension": {"ik_position_m_lt":0.0005,"ik_rotation_rad_lt":0.015,"joint_limit_margin_rad":0.001,"bounded_ik_refinement":true,"fine_place_step_m":0.00025,"fine_place_max_extra_descent_m":0.001,"micro_open_step_m":0.0005,"micro_open_max_steps":3,"weak_unload_requires_visual_support":true},
+  "criteria": {"destination_error_m_lt":0.025,"bilateral_lift_above_0_10m_seconds_gt":0.5,"max_non_target_displacement_m_lt":0.015,"max_protected_displacement_m_lt":0.015,"max_contact_penetration_m_lt":0.003,"completed_release_and_support":true,"support_removal_order":true},
+  "notes":"Ten new seeds, three paired methods; all use the same improved low-level controller. Paper comparison isolates supported contact adaptation rather than a full-paper baseline. Each case starts empty memory; no cross-case replay or outcome selection. Final criteria retained. Existing r4 failures stay unchanged."
+}

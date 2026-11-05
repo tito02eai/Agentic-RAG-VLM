@@ -1,0 +1,287 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Agentic RAG-VLM platform model backend",
+    "version": "0.3.0",
+    "description": "Non-actuating HTTP preview. Complete task execution is provided by the trusted BluPe RunnerController run_session hook."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:18076"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Backend prepared state; never creates a hardware session",
+        "responses": {
+          "200": {
+            "description": "Process and provider status"
+          }
+        }
+      }
+    },
+    "/v1/capabilities": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "HTTP and runner interface capabilities"
+          }
+        }
+      }
+    },
+    "/v1/preview": {
+      "post": {
+        "summary": "RGB \u2192 grounded object crops \u2192 CLIP \u2192 HAA-RAG \u2192 constraints \u2192 VLM review",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Proposed action or explicit stop, with original model/tool receipts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid observation/task/calibration"
+          },
+          "401": {
+            "description": "Missing or incorrect configured bearer token"
+          },
+          "503": {
+            "description": "Model service unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerToken": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "PreviewRequest": {
+        "type": "object",
+        "required": [
+          "task",
+          "image",
+          "calibration",
+          "geometry"
+        ],
+        "properties": {
+          "task": {
+            "type": "object",
+            "required": [
+              "task_id",
+              "instruction",
+              "coordinate_frame",
+              "subgoals",
+              "destinations"
+            ],
+            "properties": {
+              "coordinate_frame": {
+                "const": "arm_base"
+              },
+              "task_id": {
+                "type": "string"
+              },
+              "instruction": {
+                "type": "string"
+              },
+              "subgoals": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "target",
+                    "destination"
+                  ],
+                  "properties": {
+                    "target": {
+                      "type": "string"
+                    },
+                    "destination": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "protected_objects": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "destinations": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 3,
+                  "maxItems": 3
+                }
+              }
+            }
+          },
+          "image": {
+            "type": "object",
+            "required": [
+              "data_base64"
+            ],
+            "properties": {
+              "data_base64": {
+                "type": "string",
+                "contentEncoding": "base64",
+                "description": "Original-resolution RGB image; server filesystem paths are not accepted"
+              }
+            }
+          },
+          "calibration": {
+            "type": "object",
+            "required": [
+              "calibration_id",
+              "cameras"
+            ],
+            "description": "Top camera K, image_size, distortion_model, distortion and T_base_camera per arm. Same schema as saved BluPe calibration."
+          },
+          "geometry": {
+            "type": "object",
+            "required": [
+              "arm",
+              "coordinate_frame",
+              "support_plane",
+              "feature_heights_m"
+            ],
+            "properties": {
+              "arm": {
+                "enum": [
+                  "left",
+                  "right"
+                ]
+              },
+              "coordinate_frame": {
+                "const": "arm_base"
+              },
+              "support_plane": {
+                "type": "object",
+                "required": [
+                  "normal_base",
+                  "offset_m"
+                ]
+              },
+              "feature_heights_m": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "observation_id": {
+            "type": "string"
+          },
+          "captured_at": {
+            "type": [
+              "number",
+              "string",
+              "null"
+            ]
+          },
+          "object_candidates": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": {
+              "type": "object",
+              "required": [
+                "candidate_id",
+                "bbox_xyxy",
+                "pixel_xy"
+              ],
+              "properties": {
+                "candidate_id": {
+                  "type": "string"
+                },
+                "bbox_xyxy": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 4,
+                  "maxItems": 4
+                },
+                "pixel_xy": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              }
+            }
+          }
+        }
+      },
+      "PreviewResult": {
+        "type": "object",
+        "required": [
+          "execution_performed",
+          "decision",
+          "action",
+          "trace"
+        ],
+        "properties": {
+          "execution_performed": {
+            "const": false
+          },
+          "decision": {
+            "enum": [
+              "propose",
+              "stop"
+            ]
+          },
+          "action": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "trace": {
+            "type": "array"
+          },
+          "perception": {
+            "type": "object"
+          },
+          "reasoner_calls": {
+            "type": "array"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {},
+    {
+      "BearerToken": []
+    }
+  ]
+}

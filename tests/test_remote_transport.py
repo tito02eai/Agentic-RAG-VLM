@@ -177,6 +177,17 @@ def started_transport(**kwargs: Any) -> tuple[RemotePlatformTransport, FakeBluPe
     return transport, client
 
 
+def test_aborted_packet_prevents_followup_packet_submission() -> None:
+    from agentic_rag_vlm.platform.motion import MotionPlan, MotionKeyframe
+    transport, client = started_transport()
+    transport.motion_planner.max_joint_delta_deg_per_step = .1
+    plan = MotionPlan("right", [MotionKeyframe("start", (0.,)*6, .5),
+                               MotionKeyframe("end", (100.,)*6, .5)], (0.,)*6, .5)
+    client.wait_for_trajectory = lambda *args, **kwargs: {"status": "aborted"}
+    receipt = transport._execute_plan(pick_command(PICK_POSITION_M), plan)
+    assert not receipt["accepted"] and len(client.submitted_packets) == 1
+
+
 def test_health_check_reports_station_state() -> None:
     transport, client = started_transport()
     healthy = dict(transport.health_check())

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentic-rag-vlm"
-version = "0.2.0"
+version = "0.3.5"
 description = "Agentic RAG-VLM: affordance-aware retrieval-augmented planning with self-reflective recovery for robotic manipulation"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -17,15 +17,44 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+vision = [
+    "torch>=2.6",
+    "transformers>=4.48,<6",
+    "safetensors>=0.4",
+    "huggingface-hub>=0.27",
+    "Pillow>=10.0",
+]
+deploy = [
+    "Pillow>=10.0",
+]
+runner = [
+    # The official Runner imports its simulation IK module at startup.
+    "Pillow>=10.0",
+    "mujoco>=3.2,<4",
+    "uvicorn>=0.30,<1",
+    "websocket-client==1.9.0",
+    "websockets>=12,<16",
+]
 sim = [
-    # Guanghua/VLABench simulation experiments and asset preparation.
+    # Contact simulation, raw video recording, and historical asset preparation.
     "mujoco>=3.2,<4",
     "Pillow>=10.0",
     "scipy>=1.11,<2",
+    "mediapy>=1.2,<2",
 ]
 dev = [
     "pytest>=8.0,<9",
 ]
+analysis = [
+    "matplotlib>=3.8,<4",
+]
+serve = [
+    "torch>=2.6,<3",
+    "transformers>=5.13,<6",
+    "bitsandbytes>=0.49,<1",
+    "accelerate>=1.0,<2",
+    "Pillow>=10.0",
+]
 
 [tool.setuptools]
-packages = ["agentic_rag_vlm", "agentic_rag_vlm.platform", "scripts"]
+packages = ["agentic_rag_vlm", "agentic_rag_vlm.platform", "agentic_rag_vlm.simulation", "scripts"]

@@ -1,0 +1,30 @@
+{
+  "release": "0.3.5",
+  "checked_date": "2026-11-04",
+  "scope": "local software validation; no public hardware session or motion",
+  "full_regression": {
+    "passed": 354,
+    "skipped": 12,
+    "failures": 0,
+    "errors": 0,
+    "source_log_sha256": "4a1263a60abc29c1011489f941f34df3de350faddb52a04a65e242f22adb8f46"
+  },
+  "tested_runner_revision": "e6040394c5ed62efbcc7d627acc0dfc8ccc100a6",
+  "additional_runner_revision": "7ba2427ba960ad30af99c8fedd05c5196685295a",
+  "additional_runner_subset": {
+    "passed": 24,
+    "skipped": 2
+  },
+  "camera_check": "saved hardware image identities and paired RGB/factory profile only; no metric accuracy validation",
+  "robustness": "ten declared local functional checks, four task completions and six expected stops; not a grasp success rate",
+  "hardware_motion_submitted": false,
+  "public_provider_registered": false,
+  "repository_checkout_validation": {
+    "checked_date": "2026-11-05",
+    "passed": 354,
+    "skipped": 12,
+    "failures": 0,
+    "scope": "independent repository checkout; official pinned runner; offline tests and fixtures",
+    "log_sha256": "df35ed1016f72badc90bf79d4f3b183af8f8ab4173aafe440cc81aea5a479fda"
+  }
+}

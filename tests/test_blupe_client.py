@@ -218,6 +218,15 @@ def test_connection_errors_raise_after_retries(monkeypatch: pytest.MonkeyPatch) 
     assert len(fake.calls) == 2
 
 
+def test_session_creation_is_never_automatically_retried(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = FakeHTTP().route(lambda method, url: method == "POST" and url.endswith("/v1/sessions"),
+                            lambda call: http_error(503))
+    monkeypatch.setattr(urllib.request, "urlopen", fake)
+    with pytest.raises(BluPeAPIError):
+        make_client(fake, max_retries=3).create_session("yam-1", "test")
+    assert len(fake.calls) == 1
+
+
 def test_fetch_image_downloads_bytes(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     jpeg = b"\xff\xd8\xe0fakejpeg"
     fake = FakeHTTP().route(
