@@ -39,4 +39,4 @@ jobs:
           python -m pip install -r configs/extended_sim_dependencies.txt
           python -m pip install -e '.[runner]'
       - name: Run local contracts and integration fixtures
-        run: python -m pytest -q
+        run: python -m pytest -q tests

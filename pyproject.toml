@@ -58,3 +58,6 @@ serve = [
 
 [tool.setuptools]
 packages = ["agentic_rag_vlm", "agentic_rag_vlm.platform", "agentic_rag_vlm.simulation", "scripts"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
