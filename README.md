@@ -117,6 +117,7 @@ contact/placement checks, memory and `physics/rollout.mp4`.
 
 | Check | Recorded result | Scope |
 |---|---|---|
+| 2026-11-08 native deployment regression | 379 passed, 12 skipped | Local GPU and Mesa software rendering with pinned official runner |
 | 2026-11-08 regression repair | 360 passed, 12 skipped | Local Mesa software rendering with pinned official runner |
 | 0.3.5 full regression | 354 passed, 12 skipped | Local environment with pinned official runner |
 | Additional current-runner subset | 24 passed, 2 skipped | Separate recorded revision |

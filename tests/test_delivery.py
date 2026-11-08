@@ -132,6 +132,21 @@ def measured_test_profile():
             "gripper": {"max_aperture_m": .085}, "approach": "top", "max_observation_age_s": 2}
 
 
+def test_runner_and_cli_planner_share_measured_motion_configuration():
+    from agentic_rag_vlm.platform.motion import YamMotionPlanner
+    profile = measured_test_profile()
+    profile.update(max_joint_delta_deg_per_step=1.25, lift_height_m=.11,
+                   observation_park_xyz_m=[.2, -.1, .3])
+    planner = YamMotionPlanner.from_deployment(native_fixture(), profile)
+    assert isinstance(planner.kinematics, NativeYamKinematics)
+    assert planner.max_joint_delta_deg_per_step == 1.25
+    assert planner.lift_height_m == .11
+    assert planner.observation_park_xyz_m == [.2, -.1, .3]
+    assert planner.cartesian_step_m == .01
+    assert planner.grasp_offset_m == planner.place_offset_m == 0.
+    assert planner.kinematics.max_aperture_m == .085
+
+
 def test_valid_profile_and_native_joint_limits_are_explicit():
     c = calibration()
     c["kinematics"] = native_fixture()["kinematics"]

@@ -5,6 +5,46 @@ hardware deployment. No public robot session or motion was requested.
 The preceding 0.3.4 ten-case qualification remains a frozen local MuJoCo study:
 four task completions and six expected stops, not a hardware success rate.
 
+## Local acceptance update, 2026-11-08
+
+The native Runner and CLI now share measured motion settings, with Cartesian
+waypoints for contact approach, lift and retract. RGB candidates touching the
+tabletop ROI boundary stop before metric grounding. Local GPU and Mesa software
+regressions each passed 379 tests with 12 historical/optional skips.
+
+The final-source task qualification completed all six runs of three layouts
+across two renderers. The partial-ROI rejection passed with zero motion packets.
+All ten separate fault/memory criteria passed, including moved-target memory
+reuse, failed-memory invalidation, lost acknowledgements, feedback outage,
+WebSocket reconnection and active Stop. Four fault-cohort tasks completed and
+six stopped as required. The cohorts retained 60 actual Qwen replies, original
+wire packets, contact logs, videos and frozen source manifests.
+
+See the [selected receipt](../examples/blupe/pre_hardware_20261108.json).
+The local workspace archive is `交付/20261108/pre_hardware_sim/`. Its preliminary
+and final-source cohorts remain separate. The software/model/Runner precheck
+passed and public metadata was refreshed using GET requests only.
+
+For the first hardware call, fill and validate the pending site files, confirm
+the chosen arm and operator workflow, then use the existing Run entry below.
+The local candidate example is specific to the simulator's 640×480 view.
+Use independently checked site image/ROI/HSV measurements on hardware.
+
+Reproduce the local production-path check with running Qwen/CLIP services:
+
+```bash
+python scripts/run_blupe_protocol_task.py \
+  --runner-checkout /path/to/blupe-remote-bots \
+  --config configs/blupe_provider.example.json \
+  --candidate-config configs/blupe_local_candidates.example.json \
+  --output /new/native_task --seed 1040
+
+python scripts/run_blupe_robustness_batch.py \
+  --runner-checkout /path/to/blupe-remote-bots \
+  --candidate-config configs/blupe_local_candidates.example.json \
+  --output /new/native_faults
+```
+
 ## What is ready on our side
 
 - Full Agentic RAG-VLM provider, HAA-RAG/CLIP, scene constraints, VLM review,

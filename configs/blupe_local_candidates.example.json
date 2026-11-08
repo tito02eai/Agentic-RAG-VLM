@@ -1,0 +1,13 @@
+{
+  "kind": "color_regions",
+  "image_size_px": [640, 480],
+  "roi_xyxy": [160, 100, 500, 430],
+  "hsv_bands": [
+    {"hue_min": 240, "hue_max": 15, "saturation_min": 120, "value_min": 60},
+    {"hue_min": 70, "hue_max": 110, "saturation_min": 120, "value_min": 60},
+    {"hue_min": 25, "hue_max": 55, "saturation_min": 120, "value_min": 60}
+  ],
+  "minimum_area_px": 15,
+  "maximum_area_px": 4000,
+  "note": "Local MuJoCo testbed only. Pixel regions carry no object identities. Hardware requires original camera resolution and independently checked site ROI/HSV bands."
+}

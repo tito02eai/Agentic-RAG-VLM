@@ -1,0 +1,247 @@
+{
+  "schema_version": "agentic_rag_vlm.pre_hardware_sim.v1",
+  "date": "2026-11-08",
+  "execution_environment": "local_mujoco_with_official_runner_sdk",
+  "physical_robot_contacted": false,
+  "model": "Qwen3.5-4B@sha256:567f466171b6a997:nf4",
+  "normal_cohort": {
+    "layouts": [
+      1040,
+      1041,
+      1042
+    ],
+    "renderers": [
+      "NVIDIA EGL",
+      "Mesa llvmpipe"
+    ],
+    "completed_tasks": 6,
+    "trials": 6,
+    "cohort": "final-source known-layout regression; same layouts tested in preliminary v1",
+    "destination_error_m_range": [
+      0.000555604317941629,
+      0.0006629825425320976
+    ]
+  },
+  "roi_rejection": {
+    "checks_passed": 1,
+    "trials": 1,
+    "trajectory_packets": 0,
+    "reason": "candidate intersects ROI boundary"
+  },
+  "fault_cohort": {
+    "checks_passed": 10,
+    "criteria": 10,
+    "task_completions": 4,
+    "expected_stops": 6,
+    "cases": [
+      {
+        "case": "control",
+        "criterion_passed": true,
+        "agent_outcome": "complete",
+        "task_completed": true,
+        "trajectory_packets": 2,
+        "actual_model_replies": 4,
+        "audit_errors": []
+      },
+      {
+        "case": "empty_grasp",
+        "criterion_passed": true,
+        "agent_outcome": "safe_stop",
+        "task_completed": false,
+        "trajectory_packets": 1,
+        "actual_model_replies": 2,
+        "audit_errors": []
+      },
+      {
+        "case": "slip",
+        "criterion_passed": true,
+        "agent_outcome": "safe_stop",
+        "task_completed": false,
+        "trajectory_packets": 1,
+        "actual_model_replies": 2,
+        "audit_errors": []
+      },
+      {
+        "case": "memory_moved",
+        "criterion_passed": true,
+        "agent_outcome": "complete",
+        "task_completed": true,
+        "trajectory_packets": 4,
+        "actual_model_replies": 8,
+        "audit_errors": []
+      },
+      {
+        "case": "memory_failed_reuse",
+        "criterion_passed": true,
+        "agent_outcome": "safe_stop",
+        "task_completed": false,
+        "trajectory_packets": 3,
+        "actual_model_replies": 6,
+        "audit_errors": []
+      },
+      {
+        "case": "ack_lost_once",
+        "criterion_passed": true,
+        "agent_outcome": "complete",
+        "task_completed": true,
+        "trajectory_packets": 2,
+        "actual_model_replies": 4,
+        "audit_errors": []
+      },
+      {
+        "case": "ack_lost_persistent",
+        "criterion_passed": true,
+        "agent_outcome": "safe_stop",
+        "task_completed": false,
+        "trajectory_packets": 1,
+        "actual_model_replies": 2,
+        "audit_errors": []
+      },
+      {
+        "case": "feedback_outage",
+        "criterion_passed": true,
+        "agent_outcome": "safe_stop",
+        "task_completed": false,
+        "trajectory_packets": 1,
+        "actual_model_replies": 2,
+        "audit_errors": []
+      },
+      {
+        "case": "ws_reconnect",
+        "criterion_passed": true,
+        "agent_outcome": "complete",
+        "task_completed": true,
+        "trajectory_packets": 2,
+        "actual_model_replies": 4,
+        "audit_errors": []
+      },
+      {
+        "case": "operator_stop",
+        "criterion_passed": true,
+        "agent_outcome": "safe_stop",
+        "task_completed": false,
+        "trajectory_packets": 1,
+        "actual_model_replies": 2,
+        "audit_errors": []
+      }
+    ]
+  },
+  "actual_model_replies": 60,
+  "software_regression": {
+    "local_gpu": {
+      "passed": 379,
+      "skipped": 12
+    },
+    "local_mesa": {
+      "passed": 379,
+      "skipped": 12
+    }
+  },
+  "integrity_passed": true,
+  "wire_validator": "pinned official SDK trajectory validator after JSON roundtrip",
+  "official_runner_commit": "e6040394c5ed62efbcc7d627acc0dfc8ccc100a6",
+  "source_archive_sha256": "e15b91cf32c3ea709cd54b31adf1a958354dc6d91144da6536e78d1839894d1c",
+  "runtime_core_sha256": {
+    "agentic_rag_vlm/platform/motion.py": "8c1db7eb0a8e9e67648bdb0d5094a472c1064d181eb98855b18adb14b502d92c",
+    "agentic_rag_vlm/platform/candidates.py": "7d3a60074b69616881a14e84489e51df3a095f5c118d3981afac58190cc37f55",
+    "agentic_rag_vlm/platform/runner_provider.py": "fd1e2f8b8c6ebe03369702851c8daefa73e39f1f531ea3473ad525cfcac06d79",
+    "scripts/run_platform_session.py": "b8d1188137fe94f8068e5ecfe4dcac63f935c332e6fb8be05bcfd3e0d516aeae",
+    "scripts/run_blupe_robustness_case.py": "fb779935d70400e196be997d5a19c1b0ed49f886fc1e19bcc533963f9f588ec5",
+    "scripts/run_blupe_robustness_batch.py": "028a2b05edaf5851fb1fc8e8fc21d2bde31c1d349b57f3d417f542aa74af4b90"
+  },
+  "scope": "Registered rigid-object single-active-arm grasp/place and declared fault behavior. Software readiness for a coordinated first hardware trial.",
+  "remaining_site_inputs": [
+    "selected station and active arm",
+    "independent camera/tool/workspace validation",
+    "measured support plane, object feature heights and grasp offsets",
+    "measured destinations, joint step limit, gripper aperture and retention proxy",
+    "operator readiness and Home/Stop workflow"
+  ],
+  "hardware_qualification": "pending site measurements and first physical trial",
+  "normal_cases": [
+    {
+      "case": "gpu_1040",
+      "expected": "complete",
+      "outcome": "complete",
+      "passed": true,
+      "audit_errors": [],
+      "actual_model_replies": 4,
+      "trajectory_packets": 2,
+      "waypoints": 114,
+      "destination_error_m": 0.0006629825425320976,
+      "commanded_lift_lateral_excursion_m": 0.0001304823825992134
+    },
+    {
+      "case": "gpu_1041",
+      "expected": "complete",
+      "outcome": "complete",
+      "passed": true,
+      "audit_errors": [],
+      "actual_model_replies": 4,
+      "trajectory_packets": 2,
+      "waypoints": 114,
+      "destination_error_m": 0.000595540465338527,
+      "commanded_lift_lateral_excursion_m": 0.00012936575669561518
+    },
+    {
+      "case": "gpu_1042",
+      "expected": "complete",
+      "outcome": "complete",
+      "passed": true,
+      "audit_errors": [],
+      "actual_model_replies": 4,
+      "trajectory_packets": 2,
+      "waypoints": 114,
+      "destination_error_m": 0.000555604317941629,
+      "commanded_lift_lateral_excursion_m": 0.00013196417224710708
+    },
+    {
+      "case": "mesa_1040",
+      "expected": "complete",
+      "outcome": "complete",
+      "passed": true,
+      "audit_errors": [],
+      "actual_model_replies": 4,
+      "trajectory_packets": 2,
+      "waypoints": 114,
+      "destination_error_m": 0.0006548811178337977,
+      "commanded_lift_lateral_excursion_m": 0.00013041007026223824
+    },
+    {
+      "case": "mesa_1041",
+      "expected": "complete",
+      "outcome": "complete",
+      "passed": true,
+      "audit_errors": [],
+      "actual_model_replies": 4,
+      "trajectory_packets": 2,
+      "waypoints": 114,
+      "destination_error_m": 0.000595540465338527,
+      "commanded_lift_lateral_excursion_m": 0.00012936575669561518
+    },
+    {
+      "case": "mesa_1042",
+      "expected": "complete",
+      "outcome": "complete",
+      "passed": true,
+      "audit_errors": [],
+      "actual_model_replies": 4,
+      "trajectory_packets": 2,
+      "waypoints": 114,
+      "destination_error_m": 0.000555604317941629,
+      "commanded_lift_lateral_excursion_m": 0.00013196417224710708
+    },
+    {
+      "case": "clipped_roi",
+      "expected": "safe_stop_before_motion",
+      "outcome": "safe_stop",
+      "passed": true,
+      "audit_errors": [],
+      "actual_model_replies": 0,
+      "trajectory_packets": 0,
+      "waypoints": 0,
+      "destination_error_m": 0.2536422118138008,
+      "commanded_lift_lateral_excursion_m": null
+    }
+  ]
+}

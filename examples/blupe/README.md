@@ -17,6 +17,10 @@ simulation time and omit model waiting; they do not show wall-clock speed.
   grasps. Full raw-case archives and original failures are retained separately.
 - [0.3.5 verification](verification_0.3.5.json): recorded software tests and
   compatibility results. No public robot session or hardware motion occurred.
+- [2026-11-08 native-path acceptance](pre_hardware_20261108.json): six local
+  grasp/place completions, one partial-ROI rejection and ten separate fault/
+  memory criteria, with 60 actual Qwen replies. Native approach/lift/retract
+  paths and shared CLI/Runner motion configuration were checked.
 
 Run fresh cases with the repository README and a new output directory each time.
 Paper-era measurements are separate from these engineering results.

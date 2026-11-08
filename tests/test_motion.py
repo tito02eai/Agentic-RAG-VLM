@@ -19,6 +19,8 @@ import pytest  # noqa: E402
 
 from agentic_rag_vlm.platform.kinematics import NUM_JOINTS, YamKinematics  # noqa: E402
 from agentic_rag_vlm.platform.motion import (  # noqa: E402
+    MotionKeyframe,
+    MotionPlan,
     MotionPlanError,
     YamMotionPlanner,
 )
@@ -28,6 +30,40 @@ PICK_TARGET_M = (0.22, 0.00, 0.16)  # base frame, top-grasp reachable (validated
 PLACE_DEST_M = (0.20, -0.05, 0.15)
 APERTURE_M = 0.07
 OPEN_COMMAND = YamKinematics.gripper_command_for_aperture(APERTURE_M)
+
+
+@pytest.mark.parametrize('operation', ['pick', 'place'])
+def test_cartesian_contact_segments_preserve_vertical_path_on_wire(operation):
+    planner = YamMotionPlanner(YamKinematics(), cartesian_step_m=.01)
+    plan = _plan_pick(planner) if operation == 'pick' else _plan_place(planner)
+    segments = [('approach_open', 'descend'), ('close', 'lift')] if operation == 'pick' else [
+        ('above_destination', 'descend_to_destination'), ('release', 'retract')]
+    for start_name, end_name in segments:
+        start = next(i for i, frame in enumerate(plan.keyframes) if frame.name == start_name)
+        end = next(i for i, frame in enumerate(plan.keyframes) if frame.name == end_name)
+        frames = plan.keyframes[start:end+1]
+        segment = MotionPlan(plan.arm, frames, plan.other_joints_deg, plan.other_gripper)
+        steps = segment.interpolated_steps(max_joint_delta_deg_per_step=3.)
+        positions = np.array([planner.kinematics.fk(np.radians(q))[:3, 3] for q, _ in steps])
+        assert np.max(np.linalg.norm(positions[:, :2]-positions[0, :2], axis=1)) < .001
+        frame_positions = np.array([planner.kinematics.fk(np.radians(frame.joints_deg))[:3, 3]
+                                    for frame in frames])
+        assert np.max(np.linalg.norm(np.diff(frame_positions, axis=0), axis=1)) < .011
+        assert all(gripper == frames[0].gripper for _, gripper in steps)
+        assert np.array_equal(steps[-1][0], frames[-1].joints_deg)
+
+
+@pytest.mark.parametrize('spacing', [0., -.01, .02, float('nan')])
+def test_cartesian_spacing_rejects_invalid_values(spacing):
+    with pytest.raises(MotionPlanError, match='spacing'):
+        YamMotionPlanner(YamKinematics(), cartesian_step_m=spacing)
+
+
+@pytest.mark.parametrize('delta', [0., -1., float('nan'), float('inf')])
+def test_joint_interpolation_rejects_invalid_step_before_sampling(delta):
+    plan = MotionPlan('right', [MotionKeyframe('hold', HOME_JOINTS, .5)], HOME_JOINTS, .5)
+    with pytest.raises(MotionPlanError, match='finite and positive'):
+        plan.interpolated_steps(max_joint_delta_deg_per_step=delta)
 
 
 @pytest.fixture()

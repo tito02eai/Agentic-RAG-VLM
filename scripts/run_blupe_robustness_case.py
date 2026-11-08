@@ -260,6 +260,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--runner-checkout', type=Path, required=True)
     parser.add_argument('--config', type=Path, required=True)
+    parser.add_argument('--candidate-config', type=Path)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--case', choices=CASES, required=True)
     parser.add_argument('--seed', type=int, default=1010)
@@ -286,6 +287,9 @@ def main():
     sdk = session_module.HttpSessionAPI(origin, supports_trajectories=True, robot_id='yam-local-1', timeout_s=3.)
     sdk.local_simulation_only = True
     provider = recommended_provider(args.config, worker, origin)
+    if args.candidate_config:
+        from agentic_rag_vlm.platform.candidates import load_candidate_provider
+        provider.candidate_provider = load_candidate_provider(args.candidate_config)
     if worker.multiple:
         provider.registry['cube2'] = dict(provider.registry['cube'], visual_description='yellow rigid cube or block')
         provider.task = TaskSpec('memory_two_distinct_objects',

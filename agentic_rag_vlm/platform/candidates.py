@@ -58,6 +58,8 @@ class ColorRegionCandidates:
                         for nx in range(max(0,xx-1),min(width,xx+2)):
                             if remaining[ny,nx]:remaining[ny,nx]=False;stack.append((ny,nx))
                 if not self.minimum<=len(points)<=self.maximum:continue
+                if any(yy in (0,height-1) or xx in (0,width-1) for yy,xx in points):
+                    raise ValueError('candidate intersects the tabletop ROI boundary; clear the view or revalidate the ROI')
                 pixels=np.asarray(points);ys,xs=pixels[:,0]+y0,pixels[:,1]+x0
                 output.append({'bbox_xyxy':[int(xs.min()),int(ys.min()),int(xs.max())+1,int(ys.max())+1],
                     'pixel_xy':[float(np.median(xs)),float(np.median(ys))]})

@@ -51,7 +51,6 @@ from agentic_rag_vlm.runtime import AgenticRuntime, RuntimeConfig, Subgoal, Task
 from scripts.agentic_framework import load_semantic_registry  # noqa: E402
 from agentic_rag_vlm.platform.deployment import validate_profile
 from agentic_rag_vlm.platform.geometry import PlaneProjector
-from agentic_rag_vlm.platform.native_kinematics import NativeYamKinematics
 from agentic_rag_vlm.platform.motion import YamMotionPlanner
 from agentic_rag_vlm.platform.perception import GroundedVLMPerception
 from agentic_rag_vlm.platform.policy import paper_components
@@ -192,11 +191,7 @@ def main() -> int:
         try:
             calibration = transport.calibration()
             validate_profile(profile, calibration, robot_id=config.robot_id, arm=args.arm)
-            transport.motion_planner = YamMotionPlanner(
-                NativeYamKinematics(calibration, args.arm, profile["joint_limits_deg"],
-                    max_aperture_m=profile["gripper"]["max_aperture_m"]),
-                grasp_offset_m=0.0, place_offset_m=0.0,
-            )
+            transport.motion_planner = YamMotionPlanner.from_deployment(calibration, profile)
             plane = profile["support_plane"]
             projector = PlaneProjector(calibration, args.arm,
                 plane_normal_base=plane["normal_base"], plane_offset_m=plane["offset_m"])

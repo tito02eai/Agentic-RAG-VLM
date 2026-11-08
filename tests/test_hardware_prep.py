@@ -27,6 +27,18 @@ def color_config():
         'minimum_area_px':20,'maximum_area_px':1000}
 
 
+@pytest.mark.parametrize('box', [(0,20,20,40), (80,20,100,40), (20,0,40,20), (20,60,40,80)])
+def test_partial_object_at_roi_edge_stops_before_centroid_grounding(tmp_path, box):
+    rgb = np.full((80,100,3), 100, dtype=np.uint8)
+    x0,y0,x1,y1 = box
+    rgb[y0:y1,x0:x1] = [230,20,10]
+    path = tmp_path/'partial.png'
+    Image.fromarray(rgb).save(path)
+    observation = PlatformObservation('partial', (), (str(path),), {})
+    with pytest.raises(ValueError, match='ROI boundary'):
+        ColorRegionCandidates(color_config())(observation)
+
+
 def test_rgb_proposals_only_expose_pixels_and_respect_site_roi(tmp_path):
     rgb=np.full((80,100,3),100,dtype=np.uint8)
     rgb[10:30,10:30]=[230,20,10];rgb[40:60,60:80]=[10,200,20]

@@ -18,7 +18,6 @@ from ..task_planner import VLMTaskPlanner
 from .blupe_client import BluPeSessionClient,BluPeAPIError,SessionHandle
 from .config import load_platform_config
 from .deployment import validate_profile,validate_profile_fields,validate_execution_binding
-from .native_kinematics import NativeYamKinematics
 from .motion import YamMotionPlanner
 from .transport import RemotePlatformTransport,PlatformUnavailableError
 from .session import BluPeSession
@@ -208,10 +207,7 @@ class AgenticRAGVLMProvider:
             validate_profile(self.profile,calibration,robot_id=context['robot_id'],arm=self.profile['arm'])
             transport=RemotePlatformTransport(self.platform_config,client=client,deployment_profile=self.profile,
                 arm=self.profile['arm'],destinations=self.destinations,image_dir=folder/'images')
-            transport.motion_planner=YamMotionPlanner(NativeYamKinematics(calibration,self.profile['arm'],
-                self.profile['joint_limits_deg'],max_aperture_m=self.profile['gripper']['max_aperture_m']),grasp_offset_m=0.,place_offset_m=0.,
-                observation_park_xyz_m=self.profile.get('observation_park_xyz_m'),lift_height_m=float(self.profile.get('lift_height_m',.08)))
-            transport.motion_planner.max_joint_delta_deg_per_step=float(self.profile.get('max_joint_delta_deg_per_step',3.))
+            transport.motion_planner=YamMotionPlanner.from_deployment(calibration,self.profile)
             transport.handle=SessionHandle(context['session_id'],'',context['robot_id'],'running','',
                 episode_id=context['episode_id'],lease_id=context['lease_id'])
             step=observation.get('step_id',0)

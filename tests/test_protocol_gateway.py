@@ -11,6 +11,40 @@ from agentic_rag_vlm.platform.transport import RemotePlatformTransport
 from agentic_rag_vlm.platform.config import PlatformConfig
 
 
+@pytest.mark.parametrize('arm', ['left', 'right'])
+@pytest.mark.parametrize('final_gripper', [0., 1.])
+def test_fractional_trajectory_roundtrip_keeps_exact_endpoints_and_idle_arm(arm, final_gripper):
+    import json
+    import os
+    import numpy as np
+    from agentic_rag_vlm.platform.local_runner import import_official_runner
+    from agentic_rag_vlm.platform.motion import MotionPlan, MotionKeyframe
+    from agentic_rag_vlm.platform.blupe_client import TrajectoryBuilder
+    checkout = os.environ.get('BLUPE_RUNNER_CHECKOUT')
+    if not checkout:
+        pytest.skip('set BLUPE_RUNNER_CHECKOUT for official wire validation')
+    _, session = import_official_runner(checkout)
+    start = (13.1031001, -47.2876712, 68.7123931, -.007001, .003912, 1.123456)
+    goal = (-7.003129, -35.998171, 74.187654, -.119111, .013001, 2.819101)
+    idle = tuple(value/3 for value in start)
+    plan = MotionPlan(arm, [MotionKeyframe('start', start, .481923),
+                            MotionKeyframe('finish', goal, final_gripper)], idle, .61123)
+    builder = TrajectoryBuilder(arm)
+    for step, (joints, gripper) in enumerate(plan.interpolated_steps(max_joint_delta_deg_per_step=3.)):
+        builder.add(step_id=step, joints_deg=joints, gripper=gripper,
+                    other_joints_deg=idle, other_gripper=.61123)
+    packet = json.loads(json.dumps(builder.packets(episode_id='e', lease_id='l', prefix='fractional')[0]))
+    points = session._trajectory_waypoints(packet['waypoints'])
+    other = 'right' if arm == 'left' else 'left'
+    assert points[-1][arm+'_gripper'] == final_gripper
+    assert points[-1][arm+'_joints_deg'] == list(goal)
+    assert all(point[other+'_joints_deg'] == list(idle) and point[other+'_gripper'] == .61123 for point in points)
+    assert np.max(np.abs(np.diff([point[arm+'_joints_deg'] for point in points], axis=0))) <= 3.
+    invalid = [dict(points[-1], **{arm+'_gripper': -1e-12})]
+    with pytest.raises(ValueError, match='between 0 and 1'):
+        session._trajectory_waypoints(invalid)
+
+
 @pytest.mark.parametrize('nested',[False,True])
 def test_terminal_trace_result_cannot_be_hidden_by_accepted(nested):
     client=BluPeSessionClient('http://127.0.0.1:1')

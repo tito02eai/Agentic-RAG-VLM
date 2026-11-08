@@ -7,9 +7,11 @@ It contains no learned policy and emits no reactive control loop — it is a
 geometric planner whose every keyframe is auditable, in the same spirit as the
 IK/skill layer used in the VLABench experiments.
 
-A pick is planned as five keyframes (current pose, pre-grasp above the target,
+A pick has five stages (current pose, pre-grasp above the target,
 descend, gripper close, lift) and a place as five more (current pose, above
-destination, descend, gripper open, retract).  Including the observed current
+destination, descend, gripper open, retract). Native deployment inserts
+Cartesian IK waypoints into contact approach, lift and retract segments.
+Including the observed current
 pose as the first keyframe guarantees the executed trajectory starts with a
 bounded step from where the arm actually is.  Between keyframes the commanded
 joints interpolate at
@@ -72,6 +74,8 @@ class MotionPlan:
             raise MotionPlanError("plan has no keyframes")
         if not np.isfinite(self.velocity_scale) or not 0 < self.velocity_scale <= 1:
             raise MotionPlanError("invalid velocity scale")
+        if not np.isfinite(max_joint_delta_deg_per_step) or max_joint_delta_deg_per_step <= 0:
+            raise MotionPlanError("joint waypoint delta must be finite and positive")
         max_joint_delta_deg_per_step *= self.velocity_scale
         steps: list[tuple[tuple[float, ...], float | None]] = []
         previous = self.keyframes[0]
@@ -81,13 +85,14 @@ class MotionPlan:
             max_delta = float(np.max(np.abs(delta))) if delta.size else 0.0
             segments = max(
                 1,
-                math.ceil(max_delta / max(max_joint_delta_deg_per_step, 1e-6)),
+                math.ceil(max_delta / max_joint_delta_deg_per_step),
             )
             gripper_from = previous.gripper
             gripper_to = current.gripper
             for index in range(1, segments + 1):
                 fraction = index / segments
-                joints = np.asarray(previous.joints_deg) + fraction * delta
+                joints = (np.asarray(current.joints_deg) if index == segments else
+                          np.asarray(previous.joints_deg) + fraction * delta)
                 gripper = gripper_to
                 if gripper_from is not None and gripper_to is not None and index < segments:
                     gripper = gripper_from + fraction * (gripper_to - gripper_from)
@@ -112,9 +117,27 @@ class YamMotionPlanner:
     cadence_hz: float = 10.0
     max_plan_waypoints: int = 1200  # keep headroom under the 3000 session cap
     observation_park_xyz_m: Sequence[float] | None = None
+    cartesian_step_m: float | None = None
 
     def __post_init__(self) -> None:
+        if self.cartesian_step_m is not None and (
+            not np.isfinite(self.cartesian_step_m) or not .001 <= self.cartesian_step_m <= .01
+        ):
+            raise MotionPlanError("Cartesian waypoint spacing must be between 1 and 10 mm")
         self.hold_steps = max(1, round(self.gripper_settle_s * self.cadence_hz))
+
+    @classmethod
+    def from_deployment(cls, calibration, profile):
+        """Use the same measured motion settings in the Runner and CLI."""
+        from .native_kinematics import NativeYamKinematics
+        return cls(
+            NativeYamKinematics(calibration, profile['arm'], profile['joint_limits_deg'],
+                                max_aperture_m=profile['gripper']['max_aperture_m']),
+            grasp_offset_m=0., place_offset_m=0., cartesian_step_m=.01,
+            max_joint_delta_deg_per_step=float(profile.get('max_joint_delta_deg_per_step', 3.)),
+            lift_height_m=float(profile.get('lift_height_m', .08)),
+            observation_park_xyz_m=profile.get('observation_park_xyz_m'),
+        )
 
     # ------------------------------------------------------------- helpers
 
@@ -168,6 +191,20 @@ class YamMotionPlanner:
             )
         return plan
 
+    def _approach_frames(self, *, arm, current, goal, approach, name, gripper, notes):
+        """Solve consecutive Cartesian targets before dispatching any motion."""
+        start = self.kinematics.fk(np.radians(current))[:3, 3]
+        count = (1 if self.cartesian_step_m is None else
+                 max(1, math.ceil(np.linalg.norm(goal-start)/self.cartesian_step_m)))
+        frames = []
+        for index in range(1, count+1):
+            position = goal if index == count else start+(goal-start)*index/count
+            current = self._ik_frame(arm=arm, joints_deg_current=current,
+                                    position_m=position, approach=approach, notes=notes)
+            label = name if index == count else f"{name}_path_{index}"
+            frames.append(MotionKeyframe(label, current, gripper))
+        return frames
+
     # --------------------------------------------------------------- pick
 
     def plan_pick(
@@ -206,27 +243,32 @@ class YamMotionPlanner:
             approach=approach,
             notes=notes,
         )
-        grasp = self._ik_frame(
+        descent = self._approach_frames(
             arm=arm,
-            joints_deg_current=pregrasp,
-            position_m=target - approach_dir * self.grasp_offset_m,
+            current=pregrasp,
+            goal=target - approach_dir * self.grasp_offset_m,
             approach=approach,
+            name="descend",
+            gripper=open_command,
             notes=notes,
         )
-        lift = self._ik_frame(
+        grasp = descent[-1].joints_deg
+        lift = self._approach_frames(
             arm=arm,
-            joints_deg_current=grasp,
-            position_m=target - approach_dir * self.lift_height_m,
+            current=grasp,
+            goal=target - approach_dir * self.lift_height_m,
             approach=approach,
+            name="lift",
+            gripper=0.02,
             notes=notes,
         )
         start_gripper = gripper_current if gripper_current is not None else open_command
         keyframes = [
             MotionKeyframe("start", current, start_gripper),
             MotionKeyframe("approach_open", pregrasp, open_command),
-            MotionKeyframe("descend", grasp, open_command),
+            *descent,
             MotionKeyframe("close", grasp, 0.02, hold_steps=self.hold_steps),
-            MotionKeyframe("lift", lift, 0.02),
+            *lift,
         ]
         plan = MotionPlan(
             arm=arm,
@@ -262,6 +304,13 @@ class YamMotionPlanner:
         open_command = self.kinematics.gripper_command_for_aperture(aperture_m)
         current = tuple(float(value) for value in joints_deg_current)
 
+        # A blocked measured aperture must not replace the prior close command.
+        hold_gripper = gripper_current if hold_gripper_command is None else hold_gripper_command
+        if hold_gripper is None:
+            hold_gripper = 0.02
+        if not np.isfinite(hold_gripper) or not 0 <= hold_gripper <= 1:
+            raise MotionPlanError('invalid gripper hold command')
+
         above = self._ik_frame(
             arm=arm,
             joints_deg_current=current,
@@ -269,35 +318,36 @@ class YamMotionPlanner:
             approach=approach,
             notes=notes,
         )
-        down = self._ik_frame(
+        descent = self._approach_frames(
             arm=arm,
-            joints_deg_current=above,
-            position_m=destination - approach_dir * self.place_offset_m,
+            current=above,
+            goal=destination - approach_dir * self.place_offset_m,
             approach=approach,
+            name="descend_to_destination",
+            gripper=hold_gripper,
             notes=notes,
         )
-        retract = self._ik_frame(
+        down = descent[-1].joints_deg
+        retract = self._approach_frames(
             arm=arm,
-            joints_deg_current=down,
-            position_m=destination - approach_dir * self.approach_height_m,
+            current=down,
+            goal=destination - approach_dir * self.approach_height_m,
             approach=approach,
+            name="retract",
+            gripper=open_command,
             notes=notes,
         )
-        # A measured aperture can be blocked by the held object. Commanding
-        # that aperture releases motor preload and can drop it during carry.
-        hold_gripper = hold_gripper_command if hold_gripper_command is not None else gripper_current if gripper_current is not None else 0.02
-        if not np.isfinite(hold_gripper) or not 0<=hold_gripper<=1:raise MotionPlanError('invalid gripper hold command')
         keyframes = [
             MotionKeyframe("start", current, hold_gripper),
             MotionKeyframe("above_destination", above, hold_gripper),
-            MotionKeyframe("descend_to_destination", down, hold_gripper),
+            *descent,
             MotionKeyframe("release", down, open_command, hold_steps=self.hold_steps),
-            MotionKeyframe("retract", retract, open_command),
+            *retract,
         ]
         if self.observation_park_xyz_m is not None:
             park=np.asarray(self.observation_park_xyz_m,dtype=float)
             if park.shape!=(3,) or not np.isfinite(park).all():raise MotionPlanError('invalid observation park position')
-            parked=self._ik_frame(arm=arm,joints_deg_current=retract,position_m=park,approach=approach,notes=notes)
+            parked=self._ik_frame(arm=arm,joints_deg_current=retract[-1].joints_deg,position_m=park,approach=approach,notes=notes)
             keyframes.append(MotionKeyframe('clear_observation',parked,open_command))
         plan = MotionPlan(
             arm=arm,
