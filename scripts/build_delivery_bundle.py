@@ -22,12 +22,12 @@ def main() -> int:
                          or directory == "knowledge_base" and path.suffix in {".png", ".jsonl"})
                     and ".local." not in path.name):
                 files.append(path)
-    files += [ROOT / name for name in ("README.md", "DELIVERY_README.md", "LICENSE", "pyproject.toml", "requirements.txt")]
+    files += [ROOT / name for name in ("README.md", "README.zh-CN.md", "DELIVERY_README.md", "LICENSE", "pyproject.toml", "requirements.txt")]
     files += [path for path in [ROOT / "configs/extended_sim_dependencies.txt"] if path.is_file()]
     files += [ROOT/"paper/main_final.tex",ROOT/"paper/README.md"]
     # A repository source archive also retains the final paper dependencies
     # and the small, explicitly labelled demo/verification examples.
-    files += [p for name in ("main_final.pdf","references.bib","ieeeconf.cls")
+    files += [p for name in ("main_final.pdf","main_final.bbl","references.bib","ieeeconf.cls")
               if (p := ROOT/"paper"/name).is_file()]
     files += [p for p in (ROOT/"paper/figures").glob("fig.*.png") if p.is_file()]
     files += [p for p in (ROOT/"examples").rglob("*") if p.is_file()

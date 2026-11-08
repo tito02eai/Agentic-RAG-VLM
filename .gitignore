@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 .venv/
+.venv-models/
 venv/
 
 # Experiment outputs (regenerated locally, not distributed)
@@ -32,3 +33,16 @@ recordings/
 third_party/
 dist/
 build/
+
+# Local LaTeX build products
+paper/*.aux
+paper/*.bbl
+!paper/main_final.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.synctex.gz
+
+# Private collaboration, site measurements, logs and local evidence indexes
+local/

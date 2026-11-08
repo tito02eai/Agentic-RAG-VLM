@@ -1,0 +1,31 @@
+{
+  "case": "memory_moved",
+  "passed": true,
+  "checks": {
+    "no_public_robot": true,
+    "agent_result_saved": true,
+    "model_calls_saved": true,
+    "protected_stable": true,
+    "no_protected_robot_contact": true,
+    "no_arm_table_contact": true,
+    "no_self_contact": true,
+    "task_completed": true,
+    "independent_physics_passed": true,
+    "verified_first_task_before_reuse": true,
+    "second_action_uses_memory": true,
+    "pending_object_physically_moved": true,
+    "scene_change_replanned": true,
+    "uses_fresh_position_not_old_position": true
+  },
+  "agent_outcome": "complete",
+  "task_success": true,
+  "trajectory_packets": 4,
+  "scope": "local production-path engineering fault qualification; not hardware/benchmark success rate",
+  "execution_environment": "local_mujoco",
+  "uses_production_provider": true,
+  "uses_official_http_websocket_sdk": true,
+  "model_test_double": false,
+  "public_robot_contacted": false,
+  "disturbance": "explicit external force moves the pending second object",
+  "source_validation_commit": "440a40e8fd9f0cb1d7c3155d8a9fc165e8cffe9a"
+}

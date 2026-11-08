@@ -1,46 +1,37 @@
 # Agentic RAG-VLM
 
-**Affordance-Aware Retrieval-Augmented Generation with Self-Reflective Planning for Robotic Grasping** · IROS 2026
+**Affordance-Aware Retrieval-Augmented Generation with Self-Reflective Planning for Robotic Grasping**
 
-Agentic RAG-VLM combines affordance-aware experience retrieval, scene constraints,
-VLM action review, execution feedback and episodic memory in an
-**Observe → Plan → Execute → Verify → Monitor → Replan** loop.
+IROS 2026 accepted paper · First author Tao Chen · Fudan University
 
-This repository contains the reconstructed framework and its new engineering
-validation. The accepted paper's historical measurements are separate from these
-experiments. **Version 0.3.5 prepares a BluPe hardware integration; no public
-BluPe hardware task has been executed by this implementation.**
+[中文说明](README.zh-CN.md) · [Paper PDF](paper/main_final.pdf) · [Paper source](paper/main_final.tex) · [Quick start](docs/GETTING_STARTED.md) · [Demos](examples/blupe/README.md)
 
-[Paper](paper/main_final.pdf) · [Method reference](paper/main_final.tex) ·
-[BluPe first-trial guide](docs/BLUPE_HARDWARE_TRIAL.md) ·
-[Local demos and verification](examples/blupe/README.md)
+Agentic RAG-VLM connects task understanding to robot execution through experience retrieval, spatial reasoning and feedback. The agent retrieves compatible grasp experience, checks scene constraints, reviews the action with a vision-language model, executes a skill, verifies the outcome and updates memory.
 
-This is the canonical repository for both the framework and its BluPe integration.
-Users of the former `agentic-rag-vlm-blupe` client can follow the
-[migration guide](docs/BLUPE_REPOSITORY_MIGRATION.md); Python imports remain
-`agentic_rag_vlm`.
+```text
+Observe -> HAA-RAG + scene constraints -> Plan -> VLM review -> Execute
+   ^                                                         |
+   +------------ Monitor <- Verify <- execution feedback -----+
+                         |
+                  Memory / bounded replan
+```
 
-## Framework
+## What is available
 
-- **HAA-RAG:** category matching and compatibility of affordance type, material,
-  fragility and grasp region, followed by CLIP visual ranking.
-- **Scene reasoning:** spatial relations and observed states become execution
-  constraints and task dependencies.
-- **Agent runtime:** VLM review, bounded replanning, fresh observations and
-  conservative stopping after uncertain contact failures.
-- **Memory:** reuse verified grasp strategies between compatible objects,
-  reobserve current positions, and invalidate disproven experience reuse.
-- **Execution:** YAM/MuJoCo contact physics and BluPe native joint/gripper
-  trajectories. The framework orchestrates skills and IK without VLA training.
+| Component | Implementation |
+| --- | --- |
+| HAA-RAG | Category matching, four-dimensional affordance compatibility and CLIP visual reranking |
+| Scene reasoning | Spatial relations and object states compiled into grasp constraints and task dependencies |
+| Agent runtime | Observe, plan, execute, verify, monitor and bounded replan |
+| Memory | Reuse verified strategies, observe fresh positions and invalidate failed reuse |
+| Robot execution | Native YAM IK and joint/gripper trajectories through the official BluPe Runner and SDK |
+| Local validation | Actuator-driven MuJoCo grasp/place, protected neighbors, moved-target memory reuse and fault handling |
 
-The 14-entry engineering knowledge store includes source images and execution
-provenance. It is simulation-origin knowledge, not the paper-era store or
-calibrated hardware force control. Model weights are not bundled.
+The current engineering knowledge store contains 14 provenance-labelled records and source images. The engineering experiments have their own [validation record](docs/VALIDATION.md), separate from the paper's historical experiments.
 
-## Install and check
+## Quick start
 
-Use Linux and Python 3.10. Keep the source checkout: knowledge, configuration and
-robot assets accompany the editable installation.
+The tested simulator environment uses Linux, Python 3.10, MuJoCo 3.2.2 and EGL. Model inference runs in a separate environment.
 
 ```bash
 git clone https://github.com/tito02eai/Agentic-RAG-VLM.git
@@ -48,111 +39,91 @@ cd Agentic-RAG-VLM
 python3.10 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r configs/extended_sim_dependencies.txt
-python -m pip install -e '.[runner]'
+python -m pip install -e '.[runner,dev]'
+
+# Pinned official Runner used by the integration tests.
+git clone https://github.com/andlyu/blupe-remote-bots.git third_party/blupe-runner
+git -C third_party/blupe-runner checkout e6040394c5ed62efbcc7d627acc0dfc8ccc100a6
+export BLUPE_RUNNER_CHECKOUT="$PWD/third_party/blupe-runner"
 export MUJOCO_GL=egl
-python -m pytest -q
+export OPENBLAS_NUM_THREADS=1
+export OMP_NUM_THREADS=1
+python -m pytest -q tests
 ```
 
-MuJoCo 3.2.2 is pinned for contact-experiment reproduction. The offline suite
-needs no model credentials or robot session. Historical asset and opt-in checks
-may skip; skips are not executed validation. Start Qwen3.5-4B NF4 and CLIP ViT-L/14
-separately using the [model service guide](docs/CMU_EVALUATION.md).
+Install system EGL/OpenGL libraries and `ffmpeg` as described in the [installation and model-service guide](docs/GETTING_STARTED.md). The offline tests can run before starting the model services.
 
-## Start here for BluPe
+### Run a complete grasp task
 
-Our process can run locally and connect through the official Session API. Clone
-the tested official Runner separately:
+Start the Qwen and CLIP services using the [model setup instructions](docs/GETTING_STARTED.md#model-services), then run:
 
 ```bash
-git clone https://github.com/andlyu/blupe-remote-bots.git ../blupe-remote-bots
-git -C ../blupe-remote-bots checkout e6040394c5ed62efbcc7d627acc0dfc8ccc100a6
-export BLUPE_RUNNER_CHECKOUT="$(cd ../blupe-remote-bots && pwd)"
-python -m pytest -q
-
-# Optional public metadata/camera GETs only; no queue or motion.
-python scripts/prepare_blupe_hardware.py \
-  --platform-config configs/blupe_platform.example.json \
-  --output output/site_preparation --capture
-
-# Requires separately running Qwen and CLIP services.
 python scripts/check_platform_provider.py \
-  --config output/site_preparation/site/provider.monitor.local.json \
-  --runner-source "$BLUPE_RUNNER_CHECKOUT/codex-runner/src/remote_yam" \
-  --output output/provider_readiness.json
+  --config configs/blupe_provider.example.json \
+  --runner-source "$BLUPE_RUNNER_CHECKOUT/codex-runner/src/remote_yam"
 
-python scripts/serve_blupe_hardware.py \
-  --runner-checkout "$BLUPE_RUNNER_CHECKOUT" \
-  --config output/site_preparation/site/provider.hardware.local.json \
-  --output output/hardware_monitor --port 18797
-```
-
-Open `http://127.0.0.1:18797/`. The default monitor blocks **Run** before queue
-admission and works while measurements are pending. Choose the actual rig in the
-platform config before generating its site files.
-
-The [first-trial guide](docs/BLUPE_HARDWARE_TRIAL.md) covers measured geometry,
-camera-stream pairing, native joints, workspace limits, gripper feedback and the
-later explicitly enabled hardware Run. Simulator coordinates do not qualify the
-pending templates. Hardware execution and public provider registration remain
-separate from this software handoff.
-
-## Complete local grasp demonstration
-
-After starting the model services:
-
-```bash
 python scripts/run_blupe_protocol_task.py \
   --runner-checkout "$BLUPE_RUNNER_CHECKOUT" \
   --config configs/blupe_provider.example.json \
-  --output output/protected_neighbor --seed 1010
+  --candidate-config configs/blupe_local_candidates.example.json \
+  --output output/first_grasp --seed 1040
 ```
 
-The production provider and official HTTP/WebSocket SDK drive a local MuJoCo
-Session API gateway. Joint actuators drive the physics; no object is attached or
-teleported. Outputs include raw images/model replies, trajectories, independent
-contact/placement checks, memory and `physics/rollout.mp4`.
-**This is our local simulator, not BluPe's public hardware or a calibrated twin.**
+The production provider and official HTTP/WebSocket SDK drive our local MuJoCo backend. Outputs include `receipt.json`, raw model replies, command packets, physical checks and `physics/rollout.mp4`. Each run requires a new output directory.
 
-## Validation and limits
+### Watch the current demonstrations
 
-| Check | Recorded result | Scope |
-|---|---|---|
-| 2026-11-08 native deployment regression | 379 passed, 12 skipped | Local GPU and Mesa software rendering with pinned official runner |
-| 2026-11-08 regression repair | 360 passed, 12 skipped | Local Mesa software rendering with pinned official runner |
-| 0.3.5 full regression | 354 passed, 12 skipped | Local environment with pinned official runner |
-| Additional current-runner subset | 24 passed, 2 skipped | Separate recorded revision |
-| 0.3.4 robustness | 10 criteria passed: 4 task completions, 6 expected stops | Functional checks, not a grasp success rate |
-| Saved real camera image/packet | Identity and stream/calibration contracts checked | No hardware metric-accuracy or grasp validation |
+| Demonstration | Video | Execution receipt |
+| --- | --- | --- |
+| Grasp, lift, place and retreat with a protected neighbor | [16.08 s](examples/blupe/local_pick_place.mp4) | [Receipt](examples/blupe/local_pick_place_receipt.json) |
+| Two objects, moved-target replanning and memory reuse | [29.80 s](examples/blupe/local_memory_replan.mp4) | [Receipt](examples/blupe/local_memory_replan_receipt.json) |
 
-[Verification receipt](examples/blupe/verification_0.3.5.json) ·
-[Fault and memory report](docs/BLUPE_ROBUSTNESS_20261104.md) ·
-[Recommended-task protocol](docs/RECOMMENDED_TASK_QUALIFICATION.md)
+Videos follow simulation time and omit model waiting. The second demonstration includes a declared external-force disturbance to the pending object. See the [demo guide](examples/blupe/README.md) for the sequence and provenance.
 
-Selected examples do not replace the complete frozen raw-case archives. Preserve
-failures and declare new cohorts before changing methods or retrying cases.
+## Current validation
 
-The current front end uses registered semantics, controlled RGB proposals, known
-dimensions and a measured horizontal support plane. Full-arm/bimanual collision
-safety, physical calibration accuracy, damage prevention and automatic
-post-contact regrasp have not been validated on hardware. The paired RealSense
-adapter admits the observed zero-distortion factory profile; other factory
-models are rejected. Depth is retained in paired packets, while current metric
-grounding uses the measured plane. Video timing excludes model inference waits.
+| Check | Recorded outcome |
+| --- | --- |
+| Software regression on local GPU, Mesa and GitHub CI | 379 passed, 12 skipped at validation commit `440a40e` |
+| Local task qualification | 3 layouts × 2 renderers, all 6 grasp/place tasks completed |
+| Partial tabletop-ROI observation | Rejected before motion |
+| Ten memory, communication and Stop criteria | 4 tasks completed and 6 expected stops |
+| Real Qwen replies retained in the qualified cohorts | 60 |
+| Public BluPe hardware trial | Pending measured site setup and a coordinated first trial |
 
-## Repository map
+The [selected receipt](examples/blupe/pre_hardware_20261108.json) fixes the original validation scope and runtime hashes. Repository reorganization has a separate regression check. The front end currently uses registered semantics, controlled RGB candidates, known feature heights and a measured support plane. Hardware calibration, physical gripper settings and full-arm/bimanual collision qualification require site validation.
 
-| Path | Purpose |
-|---|---|
-| `agentic_rag_vlm/` | Retrieval, reasoning, memory, runtime and adapters |
-| `configs/` | Examples and intentionally incomplete site templates |
-| `knowledge_base/` | Engineering knowledge with source provenance |
-| `assets/yam_mjlab/` | Licensed YAM simulation model and meshes |
-| `scripts/` | Model services, experiments, audits and hardware preparation |
-| `tests/` | Offline contracts and opt-in integration checks |
-| `examples/blupe/` | Local videos and selected verification receipts |
-| `docs/` | Setup, experiment protocols and historical reports |
-| `paper/` | Final paper, its figures and method reference |
+## Project layout
 
-Code is Apache-2.0; third-party assets retain their
-[license and provenance](assets/yam_mjlab/PROVENANCE.md). Model weights are obtained
-separately under their own licenses.
+```text
+agentic_rag_vlm/   Core retrieval, reasoning, memory, runtime and adapters
+  platform/       BluPe SDK, native motion, calibration and verification
+  simulation/     MuJoCo physics, RGB-D geometry and protocol gateway
+configs/          Runnable local examples and pending hardware templates
+knowledge_base/   Provenance-labelled engineering experience and images
+scripts/          Launchers, services, qualification and audit commands
+tests/            Unit, interface and physical regression checks
+examples/blupe/   Two current demonstrations and selected receipts
+paper/            Accepted PDF, LaTeX source, bibliography and figures
+docs/             Installation, architecture, simulation and BluPe guides
+```
+
+Private site files, collaboration records and generated outputs use the ignored `local/` directory. The official Runner is installed separately under ignored `third_party/`. Historical deliveries, earlier videos, drafts and large raw experiment archives are retained locally. The repository's Git history preserves earlier public revisions.
+
+## Documentation
+
+- [Getting started](docs/GETTING_STARTED.md) — installation, model services and first run.
+- [Architecture](docs/ARCHITECTURE.md) — paper mechanisms and their code locations.
+- [Simulation](docs/SIMULATION.md) — CLI, browser UI, batch checks and output interpretation.
+- [BluPe integration](docs/BLUPE.md) — read-only monitoring, measured configuration and first hardware setup.
+- [Validation](docs/VALIDATION.md) — exact evidence, task outcomes and limits.
+- [Reproduction and assets](docs/REPRODUCTION.md) — versions, knowledge provenance and optional historical assets.
+- [Paper and citation](paper/README.md) — manuscript files and BibTeX.
+
+Code is distributed under [Apache-2.0](LICENSE). Robot assets retain their [upstream license](assets/yam_mjlab/LICENSE). Publication rights and model-weight licenses are described in the relevant guides.
+
+### Asset note
+
+The included YAM geometry supports the current local tasks. Historical humanoid
+asset bundles are stored locally; their dependent regression cases skip in a
+public checkout. See [asset and skip details](docs/REPRODUCTION.md#asset-note).
