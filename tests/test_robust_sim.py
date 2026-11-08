@@ -75,6 +75,35 @@ def test_feedback_force_policy_refuses_unvalidated_increases(force,fragility):
     assert result.safe_stop
 
 
+@pytest.mark.parametrize('bilateral,aperture,expected', [
+    (True, .018, True), (False, .018, False), (True, .003, False)])
+def test_robust_lift_uses_short_vertical_waypoints_and_checks_retention(bilateral, aperture, expected):
+    """Synthetic controller regression; physical outcomes are checked separately."""
+    from types import SimpleNamespace
+    from agentic_rag_vlm.simulation.robust import RobustRetentionTransport
+    moves = []
+    sim = SimpleNamespace(data=SimpleNamespace(time=0.))
+    sim.move = lambda point, **kwargs: moves.append((point.copy(), kwargs))
+
+    def step(count):
+        sim.data.time += count*.002
+
+    sim.step = step
+    sim.tactile = lambda: {'bilateral': bilateral, 'left_finger_q_m': aperture}
+    transport = object.__new__(RobustRetentionTransport)
+    transport.sim = sim
+    grasp = np.array([.3, -.15, .024])
+    lifted = np.array([.3, -.15, .15])
+    held, samples, evidence = transport._lift_and_test(grasp, lifted, {})
+    points = np.vstack([grasp, *(point for point, _ in moves)])
+    assert np.allclose(points[:, :2], grasp[:2])
+    assert np.all((np.diff(points[:, 2]) > 0) & (np.diff(points[:, 2]) <= .01))
+    assert np.array_equal(points[-1], lifted)
+    assert all(kwargs == {'grip': 0, 'duration': .4, 'stage': 'lift'} for _, kwargs in moves)
+    assert held is expected and len(samples) == 10
+    assert evidence['retention_contract'] == 'cartesian_incremental_lift_v1'
+
+
 def test_visible_support_gate_cannot_release_airborne_object(tmp_path):
     pytest.importorskip('mujoco');os.environ.setdefault('MUJOCO_GL','egl')
     from agentic_rag_vlm.simulation.robust import RobustPhysics,RobustRetentionTransport

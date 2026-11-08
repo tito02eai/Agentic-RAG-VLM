@@ -116,6 +116,22 @@ class RobustPhysics(ExtendedPhysics):
 
 class RobustRetentionTransport(RetentionTransport):
     """A partially unloaded grasp needs visual support and a guarded unload probe."""
+    def _lift_and_test(self, grasp, lifted, before):
+        # A single joint-space interpolation bows sideways during a vertical
+        # lift. Short Cartesian increments keep the grasp over its source and
+        # limit acceleration while retaining the fixed-force recovery policy.
+        count = max(1, int(np.ceil(abs(lifted[2]-grasp[2])/.01)))
+        for height in np.linspace(grasp[2], lifted[2], count+1)[1:]:
+            point = lifted.copy()
+            point[2] = height
+            self.sim.move(point, grip=0, duration=.4, stage='lift')
+        samples = []
+        for _ in range(10):
+            self.sim.step(20)
+            samples.append({'time': float(self.sim.data.time), **self.sim.tactile()})
+        held = all(sample['bilateral'] and sample['left_finger_q_m'] > .004 for sample in samples)
+        return held, samples, {'retention_contract': 'cartesian_incremental_lift_v1'}
+
     def _visible_support(self, target, destination):
         """Use rendered RGB-D only; no body poses, geom contacts or semantic IDs."""
         height = 2 * HALVES[target]
