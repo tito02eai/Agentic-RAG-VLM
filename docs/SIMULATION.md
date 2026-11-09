@@ -66,6 +66,14 @@ It checks contact retention, force recovery, support ordering and memory invalid
 
 ## Outputs
 
+Concurrent result/video requests reuse the saved final snapshot. Observation
+refreshes already queued at finalization keep the last captured image after
+the renderer closes. Repeated downloads preserve physics time and the video.
+
+The independent evaluator uses each target's own bilateral-lift evidence. In
+two-object tasks, the second target must also be supported at its destination
+and released from robot contact before the physical task is accepted.
+
 | File or directory | Meaning |
 | --- | --- |
 | `receipt.json` | Task result and declared execution provenance |

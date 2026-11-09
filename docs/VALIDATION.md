@@ -1,5 +1,25 @@
 # Validation and provenance
 
+## Integration review, 2026-11-09
+
+The local gateway now reuses its finalized result for concurrent or repeated
+result/video requests. Observation refreshes queued before finalization keep
+the last image after the renderer closes. The independent evaluator uses the
+first target's own bilateral-lift duration and explicitly requires the second
+target to be released from robot contact.
+
+The [review receipt](../examples/blupe/integration_review_20261109.json) records
+the regression, ten fault/memory criteria and one browser task. The browser
+check uses the official HostedRunner HTTP routes to launch a complete task,
+then downloads the result and video concurrently and repeatedly. These runs
+are a separate engineering cohort from the qualification below.
+
+Local regression recorded 384 passed and 12 skipped tests, including five new
+lifecycle and false-positive counterexamples. The frozen ten-case run passed
+all criteria with four completed tasks, six expected stops and 36 saved real
+Qwen replies. The browser task completed its independent physical checks.
+All 126 Python source files matched the frozen cohort during the review.
+
 ## Qualified engineering revision
 
 Validation commit `440a40e8fd9f0cb1d7c3155d8a9fc165e8cffe9a` qualified the native deployment path on 2026-11-08. The selected [machine-readable receipt](../examples/blupe/pre_hardware_20261108.json) retains model identity, source/runtime hashes and case outcomes.

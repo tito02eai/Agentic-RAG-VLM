@@ -18,3 +18,8 @@ The first placement is verified. A declared physical external-force disturbance 
 Videos use simulation time and omit model waiting. The [selected qualification receipt](pre_hardware_20261108.json) gives source hashes, actual model identities and the scope of the normal-task and fault cohorts. Public hardware execution is covered by the separate [first-trial setup](../../docs/BLUPE.md).
 
 Earlier video versions and large raw evidence are retained in the local archive and earlier Git revisions.
+
+The separate [2026-11-09 integration review](integration_review_20261109.json)
+covers idempotent result/video downloads, per-target lift/release checks,
+the ten fault/memory criteria and a task launched through the official browser
+HTTP interface. The two videos above remain the 2026-11-08 qualification clips.

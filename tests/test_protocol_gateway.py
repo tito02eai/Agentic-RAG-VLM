@@ -124,3 +124,88 @@ def test_yellow_surface_stays_one_candidate_across_channel_dominance(tmp_path):
     assert len(regions)==2
     assert any(c['bbox_xyxy']==[10,10,30,30] for c in regions)
     assert all('name' not in c and 'category' not in c for c in regions)
+
+
+@pytest.fixture
+def finalization_worker(tmp_path):
+    import numpy as np
+    from agentic_rag_vlm.simulation.protocol_gateway import PhysicsWorker
+
+    names = ['table', 'target_geom', 'target_geom2', 'lf_collision']
+    positions = {
+        'target_cube': np.array([.26, .12, .018]),
+        'target_cube2': np.array([.19, .17, .018]),
+    }
+    calls = []
+    worker = object.__new__(PhysicsWorker)
+    worker.output = tmp_path
+    worker.finalized = False
+    worker._capture = lambda: calls.append('capture')
+    worker.sim = SimpleNamespace(
+        step=lambda count: calls.append(('step', count)),
+        save=lambda result: calls.append('save'),
+        setup={'destination': positions['target_cube'].tolist()},
+        data=SimpleNamespace(
+            body=lambda name: SimpleNamespace(xpos=positions[name]),
+            contact=[SimpleNamespace(geom1=0, geom2=1, dist=0.)],
+        ),
+        model=SimpleNamespace(geom=lambda index: SimpleNamespace(name=names[index])),
+        bilateral_lift_seconds=1.,
+        lift_seconds_by_object={'target_cube': 1., 'target_cube2': 1.},
+        max_protected_displacement=0.,
+        protected_contacts=[],
+        forbidden_contacts=[],
+        self_contacts=[],
+        max_target_penetration=0.,
+    )
+    return worker, calls
+
+
+def test_repeated_finalization_preserves_physics_and_saved_result(finalization_worker):
+    worker, calls = finalization_worker
+    first = worker.finalize()
+    assert first['simulation_success']
+    second = worker.finalize()
+    assert second == first
+    second['simulation_success'] = False
+    assert worker.finalize() == first
+    assert calls == [('step', 500), 'capture', 'save']
+
+
+def test_queued_capture_after_finalization_keeps_last_observation():
+    from agentic_rag_vlm.simulation.protocol_gateway import PhysicsWorker
+
+    worker = object.__new__(PhysicsWorker)
+    worker.finalized = True
+    worker.cache = {'top': b'final jpeg', 'captured_at': 123.}
+    worker.sim = SimpleNamespace(rgbd=lambda: pytest.fail('renderer already closed'))
+    worker._capture()
+    assert worker.cache == {'top': b'final jpeg', 'captured_at': 123.}
+
+
+def test_first_target_requires_its_own_bilateral_lift(finalization_worker):
+    worker, _ = finalization_worker
+    worker.sim.bilateral_lift_seconds = 2.
+    worker.sim.lift_seconds_by_object['target_cube'] = 0.
+    result = worker.finalize()
+    assert not result['checks']['bilateral_lift']
+    assert result['bilateral_lift_seconds'] == 0.
+    assert not result['simulation_success']
+
+
+@pytest.mark.parametrize('still_held', [False, True])
+def test_second_target_requires_release_from_robot(finalization_worker, still_held):
+    from scripts.run_blupe_robustness_case import FaultWorker
+
+    worker, _ = finalization_worker
+    fault_worker = object.__new__(FaultWorker)
+    fault_worker.__dict__.update(worker.__dict__)
+    fault_worker.multiple = True
+    fault_worker.faults = []
+    fault_worker.executed_waypoints = []
+    fault_worker.sim.data.contact.append(SimpleNamespace(geom1=0, geom2=2, dist=0.))
+    if still_held:
+        fault_worker.sim.data.contact.append(SimpleNamespace(geom1=2, geom2=3, dist=0.))
+    result = fault_worker.finalize()
+    assert result['second_target']['released'] is (not still_held)
+    assert result['simulation_success'] is (not still_held)

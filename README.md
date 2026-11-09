@@ -93,6 +93,12 @@ Videos follow simulation time and omit model waiting. The second demonstration i
 
 The [selected receipt](examples/blupe/pre_hardware_20261108.json) fixes the original validation scope and runtime hashes. Repository reorganization has a separate regression check. The front end currently uses registered semantics, controlled RGB candidates, known feature heights and a measured support plane. Hardware calibration, physical gripper settings and full-arm/bimanual collision qualification require site validation.
 
+The separate [2026-11-09 integration review](examples/blupe/integration_review_20261109.json)
+records 384 passed and 12 skipped local regression checks. It covers concurrent
+result/video downloads, per-target lift/release verification, a complete browser
+task and the ten memory/fault criteria. Earlier qualification remains recorded
+at its original revision.
+
 ## Project layout
 
 ```text

@@ -106,10 +106,12 @@ class FaultWorker(PhysicsWorker):
             second = {'position_xyz_m': xyz.tolist(), 'destination_error_m': error,
                 'destination': error < .025,
                 'supported': {'table', 'target_geom2'} in contacts,
+                'released': not any('target_geom2' in contact and any(
+                    name and name.endswith('collision') for name in contact) for contact in contacts),
                 'bilateral_lift_seconds': sim.lift_seconds_by_object['target_cube2']}
         if second is not None:
             result['second_target'] = second
-            result['simulation_success'] &= bool(second['destination'] and second['supported']
+            result['simulation_success'] &= bool(second['destination'] and second['supported'] and second['released']
                                                    and second['bilateral_lift_seconds'] > .5)
             atomic_json(self.output/'physical_result.json', result)
         atomic_json(self.output/'faults.json', self.faults)

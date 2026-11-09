@@ -119,6 +119,8 @@ class PhysicsWorker:
         atomic_json(self.output/'calibration.json',self.calibration);atomic_json(self.output/'profile.json',self.profile)
         atomic_json(self.output/'geometry_check.json',self.geometry_check)
     def _capture(self):
+        if self.finalized:
+            return
         sim=self.sim;rgb,_=sim.rgbd();buffer=io.BytesIO();Image.fromarray(rgb).save(buffer,format='JPEG',quality=95)
         now=time.time();q=np.degrees(sim.data.qpos[sim.qadr]).tolist()
         grip=float(np.clip(sim.data.qpos[sim.model.joint('left_finger').qposadr][0]/.0375,0,1))
@@ -146,21 +148,26 @@ class PhysicsWorker:
         if joint_error>1.0:raise RuntimeError(f'joint tracking error {joint_error:.3f} deg')
         return {'max_final_joint_error_deg':joint_error,'simulated_time_s':float(sim.data.time)}
     def finalize(self):
+        # The worker serializes concurrent result/video requests. Reuse the
+        # saved outcome after the renderer closes, without advancing physics.
+        if self.finalized:
+            return json.loads((self.output/'physical_result.json').read_text())
         sim=self.sim;sim.step(500);self._capture()
         xyz=sim.data.body('target_cube').xpos.copy();destination=np.array(sim.setup['destination'])
         error=float(np.linalg.norm(xyz-destination))
         contacts=[[sim.model.geom(c.geom1).name,sim.model.geom(c.geom2).name,float(c.dist)] for c in sim.data.contact]
         supported=any(set(c[:2])=={'table','target_geom'} for c in contacts)
         released=not any('target_geom' in c[:2] and any(n and n.endswith('collision') for n in c[:2]) for c in contacts)
+        lift_seconds=sim.lift_seconds_by_object['target_cube']
         checks={'destination':error<.025,'supported':supported,'released':released,
-            'bilateral_lift':sim.bilateral_lift_seconds>.5,'protected_stable':sim.max_protected_displacement<.015,
+            'bilateral_lift':lift_seconds>.5,'protected_stable':sim.max_protected_displacement<.015,
             'no_protected_robot_contact':not sim.protected_contacts,'no_arm_table_contact':not sim.forbidden_contacts,
             'no_self_contact':not sim.self_contacts,'target_penetration':sim.max_target_penetration<.003}
         result={'evidence_kind':'mujoco_protocol_gateway','physical_robot_contacted':False,
             'simulation_success':all(checks.values()),'checks':checks,'destination_error_m':error,
-            'bilateral_lift_seconds':sim.bilateral_lift_seconds,'max_protected_displacement_m':sim.max_protected_displacement,
+            'bilateral_lift_seconds':lift_seconds,'max_protected_displacement_m':sim.max_protected_displacement,
             'object_attachment_used':False,'object_pose_reset_after_initialization':False}
-        sim.save(result);self.finalized=True;atomic_json(self.output/'physical_result.json',result);return result
+        sim.save(result);atomic_json(self.output/'physical_result.json',result);self.finalized=True;return result
 
 
 def make_gateway(checkout,worker,origin):

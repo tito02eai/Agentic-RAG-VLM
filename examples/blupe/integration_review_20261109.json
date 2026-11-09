@@ -1,0 +1,206 @@
+{
+  "schema_version": "agentic_rag_vlm.integration_review.v1",
+  "date": "2026-11-09",
+  "execution_environment": "local_mujoco_with_official_runner_sdk",
+  "public_robot_contacted": false,
+  "official_runner_commit": "e6040394c5ed62efbcc7d627acc0dfc8ccc100a6",
+  "development_base_commit": "88fadab005b1ac229562e53f9863a3af143f2255",
+  "changes": [
+    "Idempotent finalization for concurrent/repeated result and video requests",
+    "Queued observation capture retains the last image after renderer closure",
+    "First-target lift verification uses its own bilateral-contact duration",
+    "Second-target success explicitly requires release from robot contact"
+  ],
+  "software_regression": {
+    "local": {
+      "passed": 384,
+      "skipped": 12,
+      "failed": 0,
+      "errors": 0
+    },
+    "new_regression_cases": 5,
+    "skip_reasons": {
+      "historical_robot_assets": 10,
+      "optional_recorded_images": 2
+    }
+  },
+  "lifecycle": {
+    "concurrent_calls_return_identical_result": true,
+    "repeat_calls_do_not_advance_physics": true,
+    "video_unchanged": true,
+    "simulation_time_s": 3.699999999999814,
+    "task_executed": false,
+    "scope": "Renderer/result lifecycle check with a stationary scene; no grasp success claimed"
+  },
+  "browser_task": {
+    "passed": true,
+    "checks": {
+      "browser_session_created": true,
+      "browser_task_complete": true,
+      "independent_physics_passed": true,
+      "result_and_video_concurrent_http_200": true,
+      "repeat_result_identical": true,
+      "repeat_video_identical": true,
+      "frame_available_after_finalization": true,
+      "controller_error_absent": true
+    },
+    "physical": {
+      "evidence_kind": "mujoco_protocol_gateway",
+      "physical_robot_contacted": false,
+      "simulation_success": true,
+      "checks": {
+        "destination": true,
+        "supported": true,
+        "released": true,
+        "bilateral_lift": true,
+        "protected_stable": true,
+        "no_protected_robot_contact": true,
+        "no_arm_table_contact": true,
+        "no_self_contact": true,
+        "target_penetration": true
+      },
+      "destination_error_m": 0.0006139498444215036,
+      "bilateral_lift_seconds": 2.539999999999942,
+      "max_protected_displacement_m": 9.056791653339101e-05,
+      "object_attachment_used": false,
+      "object_pose_reset_after_initialization": false
+    },
+    "video_sha256": "93c6be88caaad76f4f783f8941f2ca597ad770bd78aca67ce5faa79bb81406bc",
+    "video_bytes": 726447,
+    "public_robot_contacted": false,
+    "execution_environment": "local_mujoco",
+    "scope": "One browser task and concurrent/repeated downloads using the official HostedRunner HTTP UI routes"
+  },
+  "fault_qualification": {
+    "criteria_passed": 10,
+    "criteria": 10,
+    "task_completions": 4,
+    "expected_stops": 6,
+    "integrity_passed": true,
+    "actual_model_replies": 36,
+    "model": "Qwen3.5-4B@sha256:567f466171b6a997:nf4",
+    "clip_embedding_space": "openai/clip-vit-large-patch14@sha256:a2bf730a0c7debf160f7a6b50b3aaf3703e7e88ac73de7a314903141db026dcb",
+    "source_archive_sha256": "c5e2dab4f47c6d0a7c1a4265b69fb1d86da0f64e037d8913f3e7c988c4db5204",
+    "candidate_config_sha256": "3508106018c27ae97cebf7509df2cad0f6e99daa395059b64dded37a1d5509d0",
+    "cases": [
+      {
+        "case": "control",
+        "criterion_passed": true,
+        "agent_outcome": "complete",
+        "task_completed": true,
+        "trajectory_packets": 2,
+        "actual_model_replies": 4,
+        "audit_errors": []
+      },
+      {
+        "case": "empty_grasp",
+        "criterion_passed": true,
+        "agent_outcome": "safe_stop",
+        "task_completed": false,
+        "trajectory_packets": 1,
+        "actual_model_replies": 2,
+        "audit_errors": []
+      },
+      {
+        "case": "slip",
+        "criterion_passed": true,
+        "agent_outcome": "safe_stop",
+        "task_completed": false,
+        "trajectory_packets": 1,
+        "actual_model_replies": 2,
+        "audit_errors": []
+      },
+      {
+        "case": "memory_moved",
+        "criterion_passed": true,
+        "agent_outcome": "complete",
+        "task_completed": true,
+        "trajectory_packets": 4,
+        "actual_model_replies": 8,
+        "audit_errors": []
+      },
+      {
+        "case": "memory_failed_reuse",
+        "criterion_passed": true,
+        "agent_outcome": "safe_stop",
+        "task_completed": false,
+        "trajectory_packets": 3,
+        "actual_model_replies": 6,
+        "audit_errors": []
+      },
+      {
+        "case": "ack_lost_once",
+        "criterion_passed": true,
+        "agent_outcome": "complete",
+        "task_completed": true,
+        "trajectory_packets": 2,
+        "actual_model_replies": 4,
+        "audit_errors": []
+      },
+      {
+        "case": "ack_lost_persistent",
+        "criterion_passed": true,
+        "agent_outcome": "safe_stop",
+        "task_completed": false,
+        "trajectory_packets": 1,
+        "actual_model_replies": 2,
+        "audit_errors": []
+      },
+      {
+        "case": "feedback_outage",
+        "criterion_passed": true,
+        "agent_outcome": "safe_stop",
+        "task_completed": false,
+        "trajectory_packets": 1,
+        "actual_model_replies": 2,
+        "audit_errors": []
+      },
+      {
+        "case": "ws_reconnect",
+        "criterion_passed": true,
+        "agent_outcome": "complete",
+        "task_completed": true,
+        "trajectory_packets": 2,
+        "actual_model_replies": 4,
+        "audit_errors": []
+      },
+      {
+        "case": "operator_stop",
+        "criterion_passed": true,
+        "agent_outcome": "safe_stop",
+        "task_completed": false,
+        "trajectory_packets": 1,
+        "actual_model_replies": 2,
+        "audit_errors": []
+      }
+    ]
+  },
+  "second_target_physical_checks": {
+    "position_xyz_m": [
+      0.19002892664927068,
+      0.1693855514856412,
+      0.017918190501988288
+    ],
+    "destination_error_m": 0.0006205453422601136,
+    "destination": true,
+    "supported": true,
+    "released": true,
+    "bilateral_lift_seconds": 2.201999999999979
+  },
+  "source": {
+    "python_files_match_frozen_cohort": true,
+    "python_files_checked": 126,
+    "sha256": {
+      "agentic_rag_vlm/simulation/protocol_gateway.py": "82d4f4495b0ad3bd6033105d3e9033ef85a1bf418c43c98db62e98eced9fa9ed",
+      "agentic_rag_vlm/platform/runner_provider.py": "fd1e2f8b8c6ebe03369702851c8daefa73e39f1f531ea3473ad525cfcac06d79",
+      "agentic_rag_vlm/platform/motion.py": "8c1db7eb0a8e9e67648bdb0d5094a472c1064d181eb98855b18adb14b502d92c",
+      "scripts/run_blupe_robustness_case.py": "b35c6927a84571eafea725d8394de52a66cb899c71932eaf495c2d358291b5a6",
+      "scripts/run_blupe_robustness_batch.py": "028a2b05edaf5851fb1fc8e8fc21d2bde31c1d349b57f3d417f542aa74af4b90",
+      "scripts/audit_blupe_robustness.py": "f955f4f0489d64eef71f54af6b72a6f12b0785e66e9a5bc15ff44ee80f0fdbb5",
+      "scripts/serve_blupe_recommended.py": "04057b5e4c7c9db8f03906741c6e701d3628ea5f068d48b7297aa29fe191a003",
+      "tests/test_protocol_gateway.py": "29726a26ea642e256f01362060b4294e71cca80016b633db96e80f484c53fab5"
+    }
+  },
+  "scope": "Known-layout local engineering regression. The ten-case qualification, one browser task and stationary lifecycle check are separate records. Task completion and expected stopping are reported separately.",
+  "hardware_qualification": "Pending measured site configuration and first operator-supported hardware trial"
+}
